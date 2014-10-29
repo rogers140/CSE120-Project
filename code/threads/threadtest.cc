@@ -66,6 +66,13 @@ Mailbox *mb = NULL;
 
 Lock *priLock = NULL;
 
+Semaphore *priSemaphore = NULL;
+
+Condition *priCV= NULL;
+Lock *priCVLock= NULL;
+
+Whale *whale = NULL;
+
 void
 LockThread1(int param)
 {
@@ -290,6 +297,82 @@ priLockThread3(int param){
 }
 
 void
+priSemaThread1(int para){
+    printf("pS1:0\n");
+    priSemaphore->P();
+    printf("pS1:1\n");
+
+}
+
+void
+priSemaThread2(int para){
+    printf("pS2:0\n");
+    priSemaphore->P();
+    printf("pS2:1\n");
+}
+
+void
+priSemaThread3(int para){
+    printf("pS3:0\n");
+    priSemaphore->V();
+    printf("pS3:1\n");
+
+}
+
+void
+priSemaThread4(int para){
+    printf("pS4:0\n");
+    priSemaphore->V();
+    printf("pS4:1\n");
+
+}
+
+void
+priCVThread1(int para){
+    printf("pCV1:0\n");
+    priCVLock->Acquire();
+    printf("pCV1:1\n");
+    priCV->Wait(priCVLock);
+    printf("pCV1:2\n");
+    priCVLock->Release();
+    printf("pCV1:3\n");
+}
+
+void
+priCVThread2(int para){
+    printf("pCV2:0\n");
+    priCVLock->Acquire();
+    printf("pCV2:1\n");
+    priCV->Wait(priCVLock);
+    printf("pCV2:2\n");
+    priCVLock->Release();
+    printf("pCV2:3\n");
+}
+
+void
+priCVThread3(int para){
+    printf("pCV3:0\n");
+    priCVLock->Acquire();
+    printf("pCV3:1\n");
+    priCV->Signal(priCVLock);
+    printf("pCV3:2\n");
+    priCVLock->Release();
+    printf("pCV3:3\n");
+}
+
+void
+priCVThread4(int para){
+    printf("pCV4:0\n");
+    priCVLock->Acquire();
+    printf("pCV4:1\n");
+    priCV->Signal(priCVLock);
+    printf("pCV4:2\n");
+    priCVLock->Release();
+    printf("pCV4:3\n");
+
+}
+
+void
 LockTest1()
 {
     DEBUG('t', "Entering LockTest1");
@@ -397,36 +480,133 @@ MailTest(){
 
 void
 PriTest(){
-   DEBUG('t', "Priority Text");
-   Thread *t = new Thread("one");
-   t->setPriority(10);
-   t->Fork(priThread1, 0);
-   
-   t = new Thread("two");
-   t->setPriority(25);
-   t->Fork(priThread2, 0);
-
-   t = new Thread("three");
-   t->setPriority(50);
-   t->Fork(priThread3, 0);
+    DEBUG('t', "Priority Text");
+    Thread *t = new Thread("one");
+    t->setPriority(10);
+    t->Fork(priThread1, 0);
+    
+    t = new Thread("two");
+    t->setPriority(25);
+    t->Fork(priThread2, 0);
+    
+    t = new Thread("three");
+    t->setPriority(50);
+    t->Fork(priThread3, 0);
 }
 
 void
 PriLock(){
-   DEBUG('t', "Priority Text");
-   priLock = new Lock("priLock");
-   Thread *t = new Thread("one");
-   t->setPriority(10);
-   t->Fork(priLockThread1, 0);
-   
-   t = new Thread("two");
-   t->setPriority(50);
-   t->Fork(priLockThread2, 0);
-
-   t = new Thread("three");
-   t->setPriority(25);
-   t->Fork(priLockThread3, 0);
+    DEBUG('t', "PriorityLock Text");
+    priLock = new Lock("priLock");
+    Thread *t = new Thread("one");
+    t->setPriority(10);
+    t->Fork(priLockThread1, 0);
+    t = new Thread("two");
+    t->setPriority(50);
+    t->Fork(priLockThread2, 0);
+    t = new Thread("three");
+    t->setPriority(25);
+    t->Fork(priLockThread3, 0);
 }
+
+void
+PriSema(){
+    DEBUG('t', "PrioritySemaphore Text");
+    priSemaphore = new Semaphore("priSemaphore", 0);
+    Thread *t = new Thread("one");
+    t->setPriority(50);
+    t->Fork(priSemaThread1, 0);
+    currentThread->Yield();
+    t = new Thread("two");
+    t->setPriority(25);
+    t->Fork(priSemaThread2, 0);
+    currentThread->Yield();
+    t = new Thread("three");
+    t->setPriority(10);
+    t->Fork(priSemaThread3, 0);
+    currentThread->Yield();
+    t = new Thread("four");
+    t->setPriority(10);
+    t->Fork(priSemaThread4, 0);
+}
+
+void
+PriCV(){
+    DEBUG('t', "Priority Condition Variable Text");
+    priCV = new Condition("priCV");
+    priCVLock = new Lock("priCVLock");
+    Thread *t = new Thread("one");
+    t->setPriority(50);
+    t->Fork(priCVThread1, 0);
+    currentThread->Yield();
+    t = new Thread("two");
+    t->setPriority(25);
+    t->Fork(priCVThread2, 0);
+    currentThread->Yield();
+    t = new Thread("three");
+    t->setPriority(10);
+    t->Fork(priCVThread3, 0);
+    currentThread->Yield();
+    t = new Thread("four");
+    t->setPriority(10);
+    t->Fork(priCVThread4, 0);
+}
+//Ruogu modified on 10.28
+//Whale Test
+void Whale1(int arg1) {
+    printf("A male 1 enters: \n");
+    whale->Male();
+    printf("A Matchmaker 1 enters: \n");
+    whale->Matchmaker();
+}
+void Whale2(int arg1) {
+    printf("A Matchmaker 2 enters: \n");
+    whale->Matchmaker();
+    printf("A female 2 enters: \n");
+    whale->Female();
+}
+void Whale3(int arg1) {
+    printf("A female 3 enters: \n");
+    whale->Female();
+}
+void Whale4(int arg1) {
+    printf("A male 4 enters: \n");
+    whale->Male();
+}
+void Whale5(int arg1) {
+    printf("A male 5 enters: \n");
+    whale->Male();
+}
+void Whale6(int arg1) {
+    printf("A male 6 enters: \n");
+    whale->Male();
+}
+void Whale7(int arg1) {
+    printf("A male 7 enters: \n");
+    whale->Male();
+}
+void WhaleMateTest() {
+    DEBUG('t', "Whale Text");
+    whale = new Whale("whaleclass");
+    Thread *t = new Thread("WhaleOne");
+    t->Fork(Whale1, 0);
+    t = new Thread("WhaleTwo");
+    t->Fork(Whale2, 0);
+    t = new Thread("WhaleThree");
+    t->Fork(Whale3, 0);
+    t = new Thread("WhaleFour");
+    t->Fork(Whale4, 0);
+    t = new Thread("WhaleFive");
+    t->Fork(Whale5, 0);
+    t = new Thread("WhaleSeven");
+    t->Fork(Whale6, 0);
+    t = new Thread("WhaleEight");
+    t->Fork(Whale7, 0);
+
+}
+//end of Whale Test
+
+
 //----------------------------------------------------------------------
 // ThreadTest
 // 	Invoke a test routine.
@@ -466,12 +646,15 @@ ThreadTest()
     case 10:
         PriLock();
         break;
- //   case 11:
-        //PriSema();
-        //break;
- //   case 12:
- //       PriCV();
- //       break;
+    case 11:
+        PriSema();
+        break;
+    case 12:
+        PriCV();
+        break;
+    case 13:
+        WhaleMateTest();
+        break;
     default:
 	printf("No test specified.\n");
 	break;

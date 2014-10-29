@@ -162,4 +162,22 @@ private:
     int mailItem;
     bool isEmpty;
 };
+//Whale
+class Whale {
+public:
+    Whale(char* debugName);
+    ~Whale();
+    void Male();
+    void Female();
+    void Matchmaker();
+private:
+    char* name;
+    Lock *lock;
+    int maleNum;
+    int femaleNum;
+    int matcherNum;
+    Condition* maleCond;
+    Condition* femaleCond;
+    Condition* matcherCond;
+};
 #endif // SYNCH_H

@@ -214,3 +214,64 @@ void Mailbox::Receive(int* message){
 char* Mailbox::getName(){
     return name;
 }
+//Whale
+Whale::Whale(char* debugName) {
+    name = debugName;
+    lock = new Lock("Whale_lock");
+    maleNum = 0;
+    femaleNum = 0;
+    matcherNum = 0;
+    maleCond = new Condition("male_condition");
+    femaleCond = new Condition("female_condition");
+    matcherCond = new Condition("macher_condition");
+}
+void Whale::Male() {
+    lock->Acquire();
+    ++maleNum;
+    if(femaleNum > 0 && matcherNum > 0) {
+        --femaleNum;
+        --matcherNum;
+        --maleNum;
+        femaleCond->Signal(lock);
+        matcherCond->Signal(lock);
+        printf("Matched!\n");
+    }
+    else {
+        maleCond->Wait(lock);
+    }
+    lock->Release();
+}
+void Whale::Female() {
+    lock->Acquire();
+    ++femaleNum;
+    if(maleNum > 0 && matcherNum > 0) {
+        --maleNum;
+        --matcherNum;
+        --femaleNum;
+        maleCond->Signal(lock);
+        matcherCond->Signal(lock);
+        printf("Matched!\n");
+    }
+    else {
+        femaleCond->Wait(lock);
+    }
+    lock->Release();
+
+}
+void Whale::Matchmaker() {
+    lock->Acquire();
+    ++matcherNum;
+    if(femaleNum > 0 && maleNum > 0) {
+        --femaleNum;
+        --maleNum;
+        --matcherNum;
+        femaleCond->Signal(lock);
+        maleCond->Signal(lock);
+        printf("Matched!\n");
+    }
+    else {
+        matcherCond->Wait(lock);
+    }
+    lock->Release();
+
+}
