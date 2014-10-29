@@ -82,7 +82,6 @@ private:
 
 public:
     Thread(char* debugName);		// initialize a Thread
-    Thread(char* debugName,int join = 0);
     ~Thread(); 				// deallocate a Thread
     // NOTE -- thread being deleted
     // must not be running when delete
@@ -108,16 +107,21 @@ public:
     void Print() {
         printf("%s, ", name);
     }
-
+    void setPriority(int newPriority){
+        Priority=newPriority;
+    }
+    int getPriority(){
+        return (Priority);
+    }
 private:
     // some of the private data for this class is listed above
-
+    
     int* stack; 	 		// Bottom of the stack
     // NULL if this is the main thread
     // (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
     char* name;
-
+    int Priority;
     void StackAllocate(VoidFunctionPtr func, int arg);
     // Allocate a stack for thread.
     // Used internally by Fork()
@@ -132,7 +136,6 @@ private:
 public:
     void SaveUserState();		// save user-level register state
     void RestoreUserState();		// restore user-level register state
-    void Join();
 
     AddrSpace *space;			// User code this thread is running.
 #endif

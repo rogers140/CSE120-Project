@@ -64,7 +64,7 @@ Condition *cv2 = NULL;
 
 Mailbox *mb = NULL;
 
-
+Lock *priLock = NULL;
 
 void
 LockThread1(int param)
@@ -231,6 +231,63 @@ mailThread4(int param){
     printf("%d\n",*result2);
 }
 
+void
+priThread1(int param){
+    printf("%d\n",currentThread->getPriority());
+    printf("C1:0\n");
+    printf("%d\n",currentThread->getPriority());
+    currentThread->Yield();
+    printf("C1:1\n");
+    
+}
+
+void
+priThread2(int param){
+    printf("%d\n",currentThread->getPriority());
+    printf("C2:0\n");
+    currentThread->Yield();
+    printf("%d\n",currentThread->getPriority());
+    printf("C2:1\n");  
+}
+
+void
+priThread3(int param){
+    printf("%d\n",currentThread->getPriority());
+    printf("C3:0\n"); 
+}
+
+void
+priLockThread1(int param){
+    printf("pL1:0\n");
+    priLock->Acquire();
+    printf("pL1:1\n");
+    currentThread->Yield();
+    printf("pL1:2\n");
+    priLock->Release();
+    printf("pL1:3\n");
+}
+
+void
+priLockThread2(int param){
+    printf("pL2:0\n");
+    priLock->Acquire();
+    printf("pL2:1\n");
+    currentThread->Yield();
+    printf("pL2:2\n");
+    priLock->Release();
+    printf("pL2:3\n");
+}
+
+void
+priLockThread3(int param){
+    printf("pL3:0\n");
+    priLock->Acquire();
+    printf("pL3:1\n");
+    currentThread->Yield();
+    printf("pL3:2\n");
+    priLock->Release();
+    printf("pL3:3\n");
+}
 
 void
 LockTest1()
@@ -338,6 +395,38 @@ MailTest(){
 
 }
 
+void
+PriTest(){
+   DEBUG('t', "Priority Text");
+   Thread *t = new Thread("one");
+   t->setPriority(10);
+   t->Fork(priThread1, 0);
+   
+   t = new Thread("two");
+   t->setPriority(25);
+   t->Fork(priThread2, 0);
+
+   t = new Thread("three");
+   t->setPriority(50);
+   t->Fork(priThread3, 0);
+}
+
+void
+PriLock(){
+   DEBUG('t', "Priority Text");
+   priLock = new Lock("priLock");
+   Thread *t = new Thread("one");
+   t->setPriority(10);
+   t->Fork(priLockThread1, 0);
+   
+   t = new Thread("two");
+   t->setPriority(50);
+   t->Fork(priLockThread2, 0);
+
+   t = new Thread("three");
+   t->setPriority(25);
+   t->Fork(priLockThread3, 0);
+}
 //----------------------------------------------------------------------
 // ThreadTest
 // 	Invoke a test routine.
@@ -371,6 +460,18 @@ ThreadTest()
     case 8:
         MailTest();
         break;
+    case 9:
+        PriTest();
+        break;
+    case 10:
+        PriLock();
+        break;
+ //   case 11:
+        //PriSema();
+        //break;
+ //   case 12:
+ //       PriCV();
+ //       break;
     default:
 	printf("No test specified.\n");
 	break;

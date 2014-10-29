@@ -56,7 +56,7 @@ Scheduler::ReadyToRun (Thread *thread)
     DEBUG('t', "Putting thread %s on ready list.\n", thread->getName());
 
     thread->setStatus(READY);
-    readyList->Append((void *)thread);
+    readyList->SortedInsert((void *)thread,thread->getPriority());
 }
 
 //----------------------------------------------------------------------
@@ -70,7 +70,7 @@ Scheduler::ReadyToRun (Thread *thread)
 Thread *
 Scheduler::FindNextToRun ()
 {
-    return (Thread *)readyList->Remove();
+    return (Thread *)readyList->SortedRemove(NULL);
 }
 
 //----------------------------------------------------------------------

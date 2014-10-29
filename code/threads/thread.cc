@@ -38,13 +38,10 @@ Thread::Thread(char* threadName)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
+    Priority=0;
 #ifdef USER_PROGRAM
     space = NULL;
 #endif
-}
-Thread::Thread(char* debugName,int join)
-{
-
 }
 
 //----------------------------------------------------------------------
@@ -97,6 +94,7 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     StackAllocate(func, arg);
 
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    
     scheduler->ReadyToRun(this);	// ReadyToRun assumes that interrupts
     // are disabled!
     (void) interrupt->SetLevel(oldLevel);
@@ -327,10 +325,5 @@ Thread::RestoreUserState()
 {
     for (int i = 0; i < NumTotalRegs; i++)
         machine->WriteRegister(i, userRegisters[i]);
-}
-void 
-Thread::Join()
-{
-    
 }
 #endif

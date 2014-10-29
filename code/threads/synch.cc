@@ -69,7 +69,7 @@ Semaphore::P()
     IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
 
     while (value == 0) { 			// semaphore not available
-        queue->Append((void *)currentThread);	// so go to sleep
+        queue->SortedInsert((void *)currentThread,currentThread->getPriority());	// so go to sleep
         currentThread->Sleep();
     }
     value--; 					// semaphore available,
@@ -92,7 +92,7 @@ Semaphore::V()
     Thread *thread;
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
 
-    thread = (Thread *)queue->Remove();
+    thread = (Thread *)queue->SortedRemove(NULL);
     if (thread != NULL)	   // make thread ready, consuming the V immediately
         scheduler->ReadyToRun(thread);
     value++;
@@ -118,7 +118,7 @@ void Lock::Acquire() {
      }
      IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
      while(isHeld){
-         queue->Append((void *)currentThread);
+         queue->SortedInsert((void *)currentThread, currentThread->getPriority());
          currentThread->Sleep();
      }
      isHeld = 1;
@@ -130,7 +130,7 @@ void Lock::Release() {
      ASSERT(holder!=NULL&&strcmp(holder,currentThread->getName())==0);
      Thread *thread;
      IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
-     thread = (Thread *)queue->Remove();
+     thread = (Thread *)queue->SortedRemove(NULL);
      if (thread != NULL)
          scheduler->ReadyToRun(thread);
      isHeld = 0;
@@ -150,7 +150,7 @@ Condition::~Condition() {
 void Condition::Wait(Lock* conditionLock) {
     ASSERT(conditionLock->holder!=NULL&&strcmp(conditionLock->holder,currentThread->getName())==0);
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
-    cvQueue->Append((void*)currentThread);
+    cvQueue->SortedInsert((void *)currentThread, currentThread->getPriority());
     conditionLock->Release();
     currentThread->Sleep();
     (void)interrupt->SetLevel(oldLevel);
@@ -160,7 +160,7 @@ void Condition::Wait(Lock* conditionLock) {
 }
 void Condition::Signal(Lock* conditionLock) { 
     Thread *thread;
-    thread=(Thread*)cvQueue->Remove();
+    thread=(Thread*)cvQueue->SortedRemove(NULL);
     if(thread!=NULL){
         scheduler->ReadyToRun(thread);
     }
