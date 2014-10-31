@@ -73,6 +73,11 @@ extern void ThreadPrint(int arg);
 //  Some threads also belong to a user address space; threads
 //  that only run in the kernel have a NULL address space.
 
+// include lock and condition as private variable
+// cannot include synch.h as synch.h has already include thread.h
+// make a statement to class lock and class condition
+class Lock;
+class Condition;
 class Thread {
 private:
     // NOTE: DO NOT CHANGE the order of these first two members.
@@ -82,6 +87,7 @@ private:
 
 public:
     Thread(char* debugName);		// initialize a Thread
+    Thread(char* debugName,int join);  // initialize a Thread with "joinability"
     ~Thread(); 				// deallocate a Thread
     // NOTE -- thread being deleted
     // must not be running when delete
@@ -107,12 +113,15 @@ public:
     void Print() {
         printf("%s, ", name);
     }
+    // set priority of a thread
     void setPriority(int newPriority){
         Priority=newPriority;
     }
+    // get priority of a thread
     int getPriority(){
         return (Priority);
     }
+    void Join();
 private:
     // some of the private data for this class is listed above
     
@@ -120,8 +129,16 @@ private:
     // NULL if this is the main thread
     // (If NULL, don't deallocate stack)
     ThreadStatus status;		// ready, running or blocked
-    char* name;
-    int Priority;
+    char* name;                 // debug name of the thread
+    int Priority;               // prioruty of the thread
+    int canJoin;                // "joinability" of a thread  
+    int done;                   // finish flag of a thread
+    Lock* joinLock;             // Lock of a thread
+    Condition* joinCondition;   // Condition of a thread
+    int joinCalled;             // join called flag
+    int forkCalled;             // fork called flag
+    Thread* jThread;            // the thread joined
+
     void StackAllocate(VoidFunctionPtr func, int arg);
     // Allocate a stack for thread.
     // Used internally by Fork()

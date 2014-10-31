@@ -43,6 +43,25 @@ Thread::Thread(char* threadName)
     space = NULL;
 #endif
 }
+Thread::Thread(char* debugName,int join)
+{ 
+    name = debugName;
+    stackTop = NULL;
+    stack = NULL;
+    status = JUST_CREATED;
+    joinLock = new Lock("jlock");
+    joinCondition= new Condition("jCV");
+    Priority=0;
+    jThread=NULL;
+    joinCalled=0;   
+    forkCalled=0;
+    done = 0;
+    canJoin = join;
+#ifdef USER_PROGRAM   
+    space = NULL;
+#endif
+
+}
 
 //----------------------------------------------------------------------
 // Thread::~Thread
@@ -88,6 +107,11 @@ Thread::~Thread()
 void
 Thread::Fork(VoidFunctionPtr func, int arg)
 {
+    forkCalled=1;  // fork() is now called
+    if(arg!=0){
+        jThread = (Thread*)arg;  // get the joinee thread
+        // printf("%d\n",jThread->getName());  // used for debug
+    }
     DEBUG('t', "Forking thread \"%s\" with func = 0x%x, arg = %d\n",
           name, (int) func, arg);
 
@@ -142,16 +166,57 @@ Thread::CheckOverflow()
 //----------------------------------------------------------------------
 
 //
+void 
+Thread::Join()
+{
+    ASSERT(forkCalled==1);    //ASSERT fork() has been called
+    ASSERT(joinCalled==0);    //ASSERT join() has not been called
+    ASSERT(canJoin==1)        //ASSERT this thread can be joined
+    if(jThread!=NULL){
+        ASSERT(strcmp(jThread->getName(),currentThread->getName())!=0);    //ASSERT the thread does not join itself
+    }
+    joinCalled=1;             // join() is now called
+    joinLock->Acquire();
+    while(done==0){           // if child thread has not finished block parent, otherwise do not block parent
+        // printf("wait!%s\n",currentThread->getName());   //used for debug
+        joinCondition->Wait(joinLock);
+    }
+    joinLock->Release();
+}
+
+//
 void
 Thread::Finish ()
 {
-    (void) interrupt->SetLevel(IntOff);
-    ASSERT(this == currentThread);
+    if(canJoin==0){
+        (void) interrupt->SetLevel(IntOff);
+        ASSERT(this == currentThread);
 
-    DEBUG('t', "Finishing thread \"%s\"\n", getName());
+        DEBUG('t', "Finishing thread \"%s\"\n", getName());
+        done=1;   // parent is done
 
-    threadToBeDestroyed = currentThread;
-    Sleep();					// invokes SWITCH
+        threadToBeDestroyed = currentThread;
+        Sleep();                    // invokes SWITCH
+    }
+    else{
+        while(joinCalled==0){
+
+        }
+
+        (void) interrupt->SetLevel(IntOff);
+        ASSERT(this == currentThread);
+
+        DEBUG('t', "Finishing thread \"%s\"\n", getName());
+
+        threadToBeDestroyed = currentThread;
+        joinLock->Acquire();
+        done=1;                                             // child is done
+        joinCondition->Signal(joinLock);                    // wake up parent thread
+        // printf("signal%s\n",currentThread->getName());   //used for debug
+        joinLock->Release();
+        Sleep();                    // invokes SWITCH
+        
+    }
     // not reached
 }
 

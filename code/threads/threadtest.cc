@@ -8,6 +8,7 @@
 // testnum is set in main.cc
 int testnum = 1;
 
+
 //----------------------------------------------------------------------
 // SimpleThread
 // 	Loop 5 times, yielding the CPU to another ready thread 
@@ -45,25 +46,30 @@ ThreadTest1()
     SimpleThread(0);
 }
 
-//----------------------------------------------------------------------
-// LockTest1
-//----------------------------------------------------------------------
+//-------------------------------------------------------------------
+// variables for tests
+//-------------------------------------------------------------------
 
+// used in lock tests
 Lock *locktest1 = NULL;
 Lock *locktest2 = NULL;
 Lock *locktest3 = NULL;
 Lock *locktest4 = NULL;
 Lock *locktest5 = NULL;
 
+// used in CV tests
 Lock *cvLock1 =NULL;
 Condition *cv1 = NULL;
 int sharedState = 0;
 
-Lock *cvLock2 =NULL;
-Condition *cv2 = NULL;
 
+// used in mailbox test
 Mailbox *mb = NULL;
 
+//  yieldTimes is used in join tests
+int yieldTimes = 3;
+
+// used in priority tests
 Lock *priLock = NULL;
 
 Semaphore *priSemaphore = NULL;
@@ -71,7 +77,11 @@ Semaphore *priSemaphore = NULL;
 Condition *priCV= NULL;
 Lock *priCVLock= NULL;
 
+//used in whale tests
 Whale *whale = NULL;
+
+
+
 
 void
 LockThread1(int param)
@@ -136,6 +146,22 @@ LockThread5(int param)
 }
 
 void
+cvThread0(int param){
+    printf("C1:0\n");
+    // cvLock1->Acquire();
+    printf("C1:1\n");
+    while(!sharedState){
+        printf("C1:2\n");
+        cv1->Wait(cvLock1);
+        printf("C1:3\n");
+    }
+    ASSERT(sharedState);
+    printf("C1:4\n");
+    // cvLock1->Release();
+
+}
+
+void
 cvThread1(int param){
     printf("C1:0\n");
     cvLock1->Acquire();
@@ -166,44 +192,87 @@ cvThread2(int param){
 void
 cvThread3(int param){
     printf("C3:0\n");
-    cvLock2->Acquire();
+    cvLock1->Acquire();
     printf("C3:1\n");
     while(!sharedState){
         printf("C3:2\n");
-        cv2->Wait(cvLock2);
+        cv1->Wait(cvLock1);
         printf("C3:3\n");
     }
     ASSERT(sharedState);
     printf("C3:4\n");
-    cvLock2->Release();
+    cvLock1->Release();
 }
 
 void
 cvThread4(int param){
     printf("C4:0\n");
-    cvLock2->Acquire();
+    cvLock1->Acquire();
     printf("C4:1\n");
     while(!sharedState){
         printf("C4:2\n");
-        cv2->Wait(cvLock2);
+        cv1->Wait(cvLock1);
         printf("C4:3\n");
     }
     ASSERT(sharedState);
     printf("C4:4\n");
-    cvLock2->Release();
+    cvLock1->Release();
 }
 
 void
 cvThread5(int param){
     printf("C5:0\n");
-    cvLock2->Acquire();
+    cvLock1->Acquire();
     printf("C5:1\n");
     sharedState=1;
     printf("C5:2\n");
-    // cv2->Broadcast(cvLock2);
-    delete cv2;
+    cv1->Broadcast(cvLock1);
+    // delete cv1;
     printf("C5:3\n");
-    cvLock2->Release();
+    cvLock1->Release();
+}
+
+void
+cvThread8(int param){
+    printf("C8:0\n");
+    cvLock1->Acquire();
+    printf("C8:1\n");
+    while(!sharedState){
+        printf("C8:2\n");
+        cv1->Wait(cvLock1);
+        printf("C8:3\n");
+    }
+    ASSERT(sharedState);
+    printf("C8:4\n");
+    cvLock1->Release();
+}
+
+void
+cvThread9(int param){
+    printf("C9:0\n");
+    cvLock1->Acquire();
+    printf("C9:1\n");
+    while(!sharedState){
+        printf("C9:2\n");
+        cv1->Wait(cvLock1);
+        printf("C9:3\n");
+    }
+    ASSERT(sharedState);
+    printf("C9:4\n");
+    cvLock1->Release();
+}
+
+void
+cvThread10(int param){
+    printf("C10:0\n");
+    cvLock1->Acquire();
+    printf("C10:1\n");
+    sharedState=1;
+    printf("C10:2\n");
+    // cv1->Broadcast(cvLock1);
+    delete cv1;
+    printf("C10:3\n");
+    cvLock1->Release();
 }
 
 void
@@ -372,6 +441,10 @@ priCVThread4(int para){
 
 }
 
+//----------------------------------------------------------------------
+// LockTest1 normal lock situation
+//----------------------------------------------------------------------
+
 void
 LockTest1()
 {
@@ -384,6 +457,10 @@ LockTest1()
     t = new Thread("two");
     t->Fork(LockThread2, 0);
 }
+
+//----------------------------------------------------------------------
+// LockTest3 acquire the lock twice
+//----------------------------------------------------------------------
 
 void
 LockTest3()
@@ -398,6 +475,9 @@ LockTest3()
 
 }
 
+//----------------------------------------------------------------------
+// LockTest4 release the lock that is not held
+//----------------------------------------------------------------------
 void
 LockTest4()
 {
@@ -416,6 +496,10 @@ LockTest4()
 
 }
 
+//----------------------------------------------------------------------
+// LockTest5 delete a lock that is not held
+//----------------------------------------------------------------------
+
 void
 LockTest5()
 {
@@ -431,9 +515,27 @@ LockTest5()
 
 }
 
+//----------------------------------------------------------------------
+// CvTest0 Condition variable not holding the lock
+//----------------------------------------------------------------------
+void
+CvTest0(){
+    DEBUG('t', "Condition variable signal");
+
+    cvLock1 = new Lock("cvLock0");
+    cv1 = new Condition("cv0");
+
+    Thread *t = new Thread("zero");
+    t->Fork(cvThread0, 0);
+
+}
+
+//----------------------------------------------------------------------
+// CvTest1 Condition variable signal
+//----------------------------------------------------------------------
 void
 CvTest1(){
-    DEBUG('t', "Condition variable without holding a lock");
+    DEBUG('t', "Condition variable signal");
 
     cvLock1 = new Lock("cvLock1");
     cv1 = new Condition("cv1");
@@ -445,12 +547,15 @@ CvTest1(){
 
 }
 
+//----------------------------------------------------------------------
+// CvTest2 Condition variable boradcast
+//----------------------------------------------------------------------
 void
 CvTest2(){
     DEBUG('t', "Condition variable broadcast");
 
-    cvLock2 = new Lock("cvLock2");
-    cv2 = new Condition("cv2");
+    cvLock1 = new Lock("cvLock2");
+    cv1 = new Condition("cv2");
 
     Thread *t = new Thread("three");
     t->Fork(cvThread3, 0);
@@ -460,6 +565,47 @@ CvTest2(){
     t->Fork(cvThread5, 0);
 
 }
+
+//----------------------------------------------------------------------
+// CvTest3 Signal/broadcasting but no body is waiting
+//----------------------------------------------------------------------
+void
+CvTest3(){
+    DEBUG('t', "Condition variable broadcast");
+
+    cvLock1 = new Lock("cvLock3");
+    cv1 = new Condition("cv3");
+
+    Thread *t = new Thread("two");
+    t->Fork(cvThread2, 0);
+    t = new Thread("five");
+    t->Fork(cvThread5, 0);
+    t = new Thread("three");
+    t->Fork(cvThread3, 0);
+    t = new Thread("four");
+    t->Fork(cvThread4, 0);
+
+} // problem exist! here
+
+//----------------------------------------------------------------------
+// CvTest4 Condition delete queue that is not empty
+//----------------------------------------------------------------------
+void
+CvTest4(){
+    DEBUG('t', "Condition variable broadcast");
+
+    cvLock1 = new Lock("cvLock4");
+    cv1 = new Condition("cv4");
+
+    Thread *t = new Thread("eight");
+    t->Fork(cvThread8, 0);
+    t = new Thread("nine");
+    t->Fork(cvThread9, 0);
+    t = new Thread("ten");
+    t->Fork(cvThread10, 0);
+
+}
+
 
 void
 MailTest(){
@@ -606,6 +752,167 @@ void WhaleMateTest() {
 }
 //end of Whale Test
 
+//start of join test section
+
+void
+Joiner(Thread *joinee)
+{
+  for(int i=0;i<yieldTimes;i++){
+    currentThread->Yield();
+  }
+
+  printf("Waiting for the Joinee to finish executing.\n");
+
+  currentThread->Yield();
+  currentThread->Yield();
+
+  // Note that, in this program, the "joinee" has not finished
+  // when the "joiner" calls Join().  You will also need to handle
+  // and test for the case when the "joinee" _has_ finished when
+  // the "joiner" calls Join().
+
+  joinee->Join();
+
+  currentThread->Yield();
+  currentThread->Yield();
+
+  printf("Joinee has finished executing, we can continue.\n");
+
+  currentThread->Yield();
+  currentThread->Yield();
+}
+
+void
+Joinee()
+{
+  int i;
+
+  for (i = 0; i < 5; i++) {
+    printf("Smell the roses.\n");
+    currentThread->Yield();
+  }
+
+  currentThread->Yield();
+  printf("Done smelling the roses!\n");
+  currentThread->Yield();
+}
+
+//----------------------------------------------------------------------
+// ForkerThread1 common join test
+// when yieldTimes = 10 joinee is only destroy after join() is called
+//----------------------------------------------------------------------
+
+void
+ForkerThread()
+{
+  Thread *joiner = new Thread("joiner", 0);  // will not be joined
+  Thread *joinee = new Thread("joinee", 1);  // WILL be joined
+
+  // fork off the two threads and let them do their business
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
+  joinee->Fork((VoidFunctionPtr) Joinee, 0);
+
+  // this thread is done and can go on its merry way
+  printf("Forked off the joiner and joiner threads.\n");
+}
+
+//----------------------------------------------------------------------
+// ForkerThread2 join itself
+//----------------------------------------------------------------------
+void
+ForkerThread2()
+{
+  Thread *joiner = new Thread("joiner", 1);  // will not be joined
+  //Thread *joinee = new Thread("joinee", 1);  // WILL be joined
+
+  // fork off the two threads and let them do their business
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joiner);
+  //joinee->Fork((VoidFunctionPtr) Joinee, 0);
+
+  // this thread is done and can go on its merry way
+  printf("Forked off the joiner and joiner threads.\n");
+}
+
+
+//----------------------------------------------------------------------
+// ForkerThread3 finish before join() called
+//----------------------------------------------------------------------
+void
+ForkerThread3()
+{
+  Thread *joiner = new Thread("joiner", 0);  // will not be joined
+  Thread *joinee = new Thread("joinee", 1);  // WILL be joined
+
+  // fork off the two threads and let them do their business
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
+  joinee->Fork((VoidFunctionPtr) Joinee, 0);
+
+  joinee->Finish();
+
+  // this thread is done and can go on its merry way
+  printf("Forked off the joiner and joiner threads.\n");
+}
+
+//----------------------------------------------------------------------
+// ForkerThread4 join() can only be called after fork() is called
+//----------------------------------------------------------------------
+void
+ForkerThread4()
+{
+  Thread *joiner = new Thread("joiner", 0);  // will not be joined
+  Thread *joinee = new Thread("joinee", 1);  // WILL be joined
+
+  // fork off the two threads and let them do their business
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
+  // joinee->Fork((VoidFunctionPtr) Joinee, 0);
+
+
+
+  // this thread is done and can go on its merry way
+  printf("Forked off the joiner and joiner threads.\n");
+}
+
+//----------------------------------------------------------------------
+// ForkerThread5 only thread created to be joined can be joined
+//----------------------------------------------------------------------
+void
+ForkerThread5()
+{
+  Thread *joiner = new Thread("joiner", 0);  // will not be joined
+  Thread *joinee = new Thread("joinee", 1);  // WILL be joined
+
+  // fork off the two threads and let them do their business
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
+  joinee->Fork((VoidFunctionPtr) Joinee, 0);
+  joiner->Join();
+
+
+
+  // this thread is done and can go on its merry way
+  printf("Forked off the joiner and joiner threads.\n");
+}
+
+//----------------------------------------------------------------------
+// ForkerThread6 join can only be called once
+//----------------------------------------------------------------------
+void
+ForkerThread6()
+{
+  Thread *joiner = new Thread("joiner", 0);  // will not be joined
+  Thread *joinee = new Thread("joinee", 1);  // WILL be joined
+
+  // fork off the two threads and let them do their business
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
+  joinee->Fork((VoidFunctionPtr) Joinee, 0);
+  joinee->Join();
+
+
+
+  // this thread is done and can go on its merry way
+  printf("Forked off the joiner and joiner threads.\n");
+}
+
+//end of join test section
 
 //----------------------------------------------------------------------
 // ThreadTest
@@ -617,10 +924,10 @@ ThreadTest()
 {
     switch (testnum) {
     case 1:
-	ThreadTest1();
+	    ThreadTest1();
 	break;
     case 2:
-	LockTest1();
+        LockTest1();
 	break;
     case 3:
         LockTest3();
@@ -632,29 +939,60 @@ ThreadTest()
         LockTest5();
         break;
     case 6:
-        CvTest1();
+        CvTest0();
         break;
     case 7:
-        CvTest2();
+        CvTest1();
         break;
     case 8:
-        MailTest();
+        CvTest2();
         break;
     case 9:
-        PriTest();
+        CvTest3();
         break;
     case 10:
-        PriLock();
+        CvTest4();
         break;
     case 11:
-        PriSema();
+        MailTest();
         break;
     case 12:
-        PriCV();
-        break;
+        ForkerThread();
+    break;
     case 13:
-        WhaleMateTest();
-        break;
+        yieldTimes=5;
+        ForkerThread();
+    break;
+    case 14:
+        ForkerThread2();
+    break;
+    case 15:
+        ForkerThread3();
+    break;
+    case 16:
+        ForkerThread4();
+    break;
+    case 17:
+        ForkerThread5();
+    break;
+    case 18:
+        ForkerThread6();
+    break;
+    // case 19:
+    //     PriTest();
+    //     break;
+    // case 20:
+    //     PriLock();
+    //     break;
+    // case 21:
+    //     PriSema();
+    //     break;
+    // case 22:
+    //     PriCV();
+    //     break; 
+    // case 23:
+    //     WhaleMateTest();
+    //     break;
     default:
 	printf("No test specified.\n");
 	break;
