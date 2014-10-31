@@ -1,0 +1,18 @@
+Member of Group:
+	Lijun Chen
+	Nasha Zhai
+	Ruogu Liu
+	Yiqiu Liu
+
+1. Locks and Condition Variables
+	To implement Lock, we add two functions ("Acquire()" and "Release()"), a string to indicate the holder of the Lock and a integer indicating whether this lock is held. In the "Acquire()" function, we first check whether this Lock is held by current thread using "ASSERT" in order to handle the situation when a thread tries to acquire the same lock which it has acquired. Then we disable interrupt to see if the Lock is held by others, if so, put this thread on the queue and force it to sleep. Everytime it is waked up, we check "isHeld" again to see if current thread could get the lock, if nobody holds the lock, it will change the "isHeld" into 1 and change the "holder" to the name of its current thread.
+2. Mailbox
+3. Join
+4. Priority
+5. Whale
+	A class called "Whales" is added to synch.cc and synch.h file, which has a Lock, three counters of each roles (male, femal and matchmaker) and three CVs. And "Whale" has three functions including "Male()", "Female()" and "Matchmaker()". 
+	For every function, it firstly tries to acquire the Lock and increment the counter of its role, then test if other two counters are both bigger than 0, if so, it decrement all three counters, and a "Match" will be made After that, it signals other processes of different roles waiting for it to match. If it can not be matched (lack of any of the other two roles), it just wait on its CV waiting for others to wake it up.
+	The implementation works pretty well and passed the test we have designed. The test basically creates 8 threads, of which may call "Male()", "Female()" or "Matchmaker()". Every time a match can be made, a match is expected. By observing the output of the test, we found our "Whale" works normally and meet the requirements.
+
+Summary:
+Everyone in our group contributed to the project. Ruogu Liu implemented "Locks and Condition Variables", Yiqiu Liu implemented "Mailbox", Lijun Chen implemented "Join" and "Priority", Nasha Zhai implemented "Whales". As for the Extra Credit of "Priority", we four worked together to figure it out.

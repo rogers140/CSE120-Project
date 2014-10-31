@@ -123,6 +123,7 @@ void Lock::Acquire() {
      }
      isHeld = 1;
      holder = currentThread->getName();
+     currentThread->setPriority((-1)*currentThread->getPriority()); // threads hold lock own the highest priority
      (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
 
 }
@@ -135,6 +136,7 @@ void Lock::Release() {
          scheduler->ReadyToRun(thread);
      isHeld = 0;
      holder = NULL;
+     currentThread->setPriority((-1)*currentThread->getPriority());// threads release lock gain its normal priority
      (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
 }
 
