@@ -5,14 +5,36 @@ Member of Group:
 	Yiqiu Liu
 
 1. Locks and Condition Variables
-	To implement Lock, we add two functions ("Acquire()" and "Release()"), a string to indicate the holder of the Lock and a integer indicating whether this lock is held. In the "Acquire()" function, we first check whether this Lock is held by current thread using "ASSERT" in order to handle the situation when a thread tries to acquire the same lock which it has acquired. Then we disable interrupt to see if the Lock is held by others, if so, put this thread on the queue and force it to sleep. Everytime it is waked up, we check "isHeld" again to see if current thread could get the lock, if nobody holds the lock, it will change the "isHeld" into 1 and change the "holder" to the name of its current thread.
+	To implement Lock, we add two functions ("Acquire()" and "Release()"), a string to indicate the holder of the Lock and a integer indicating whether this lock is held. In the "Acquire()" function, we first check whether this Lock is held by current thread using "ASSERT" in order to handle the situation when a thread tries to acquire the same lock which it has acquired. Then we disable interrupt to see if the Lock is held by others, if so, put this thread on the queue and force it to sleep. Everytime it is waked up, we check "isHeld" again to see if current thread could get the lock, if nobody holds the lock, it will change the "isHeld" into 1 and change the "holder" to the name of its current thread. For dealing extra credit, we store the old thread priority for "Release()" to recover. And finally, we enable the interrupt.
+
+	As for the "Release()", we disable interrupt, get a thread from the queue, recover its priority and put it on the ready queue.
+
+	In our test 2-5, we tested the cases where the thread acts normally, acquires same lock twice, release a lock that is not held by itself, delete a lock that is not released.
+	As for CV, we have implemented "Wait()" and "Signal()". In "Wait()" disable interrupt, put thread into queue, release lock which is acquired before and put current thread into sleep while enabling the interrupt. After it gets invoked, it will tries to acquire the lock again. In "Signal()", it simply gets a thread from the queue, put it in the ready queue. And it's similar in "BroadCast(), except putting all queuing thread into ready queue. Test 6-10 is for testing CV's rightness including: common CV behavior: signal & wait, CV call "Wait" before it holds the lock, broadcast while nobody is listening, cv is deleted while queue is not empty. 
+
 2. Mailbox
+	Mailbox has a lock and two CV, and two method: "Send()" and "Receive()". In the "Send()" function, it first acquire a lock and looply check if the message is empty, if not, it will wait on a CV called "sendGo". After it has been invoked, it will signal receiver who is waiting for the message by signal "recvGo". Similarly, in the "Receive()", it first acquire a lock and looply check if the message is empty, if so, it will wait on a CV called "RecvGo". After it has been invoked, it will signal sender who is waiting for sending message. Test 11, 26, 27 covers the tests including: MailTest for two senders and two receivers, MailTest for one sender and two receivers and MailTest for two senders and one receiver. And our code performs well.
+
 3. Join
+	In thread.cc, we implemented "Join()", modified "Fork()" and "Finish()". During this period, we also implemented it with priority and took the priority inversion into consideration. Briefly, we aquire a lock and let current thread wait for a CV, after joinee finishes, it will signal the joiner, and the joiner wake up to finish its own job.
+	Our test 14-18 includes various kinds of test cases, including: join itself, finish before join called, called join before fork, a thread which is not created for join calls join, join can only be called once. Our program works well on these tests.
+
 4. Priority
+	As for priority, we have mainly implemented it in the "thread.cc". In order to add priority, we also modified many of our old code, including synch.cc, scheduler.cc. So we enable priority in the Lock, CV and Semaphore. Our main effort to deal with priority was on the extra credit, which will be explained in more detail.
+
+	We tests priority on cases by test 19-22 including: context swich between different priority threads, threads with different priority while competing to acquire Lock, threads with different priority while competing semaphore, threads with different priority while competing condition variable. Our programs turned to perform well.
+
 5. Whale
 	A class called "Whales" is added to synch.cc and synch.h file, which has a Lock, three counters of each roles (male, femal and matchmaker) and three CVs. And "Whale" has three functions including "Male()", "Female()" and "Matchmaker()". 
+
 	For every function, it firstly tries to acquire the Lock and increment the counter of its role, then test if other two counters are both bigger than 0, if so, it decrement all three counters, and a "Match" will be made After that, it signals other processes of different roles waiting for it to match. If it can not be matched (lack of any of the other two roles), it just wait on its CV waiting for others to wake it up.
-	The implementation works pretty well and passed the test we have designed. The test basically creates 8 threads, of which may call "Male()", "Female()" or "Matchmaker()". Every time a match can be made, a match is expected. By observing the output of the test, we found our "Whale" works normally and meet the requirements.
+
+	The implementation works pretty well and passed the test 23 that we have designed. The test basically creates 8 threads, of which may call "Male()", "Female()" or "Matchmaker()". Every time a match can be made, a match is expected. By observing the output of the test, we found our "Whale" works normally and meet the requirements.
+
+6. Extra Credit.
+	The main problem is the priority inversion, which results in a high priority thread blocked by medium priority. Specially, in the cases of Lock, if a low priority thread holds the lock, then a medium thread comes to kick low thread out, then a high priority comes to acquire the lock which held by low priority thread. Since low priority lock can win over medium priority thread, it will never release the lock until medium priority thread finishes. So The high priority thread is blocked by medium priority thread, which is abnormal. To fix this, we decide to raise the priority of the lock holder's priority if a high priority thread comes to acquire the lock. To achieve that, we have modified the scheduler's function by resorting the ready queue again every time we find next thread to run. 
+
+	Similar tricks are used in the Join problem. When a low priority thread joins high priority threads, and a medium priority thread comes in a kick low priority out, blocking high priority thread from running before itself. So we have to raise the priority of low priority thread to its joiner's priority, blocking medium priority from running one the CPU.
 
 Summary:
 Everyone in our group contributed to the project. Ruogu Liu implemented "Locks and Condition Variables", Yiqiu Liu implemented "Mailbox", Lijun Chen implemented "Join" and "Priority", Nasha Zhai implemented "Whales". As for the Extra Credit of "Priority", we four worked together to figure it out.

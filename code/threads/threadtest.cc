@@ -405,7 +405,7 @@ CvTest3(){
 }
 
 //----------------------------------------------------------------------
-// CvTest4 Condition delete queue that is not empty
+// CvTest4 delete cv queue that is not empty
 //----------------------------------------------------------------------
 void
 cvThread8(int param){
@@ -1249,10 +1249,10 @@ ThreadTest()
         CvTest2(); //condition variable broadcast
         break;
     case 9:
-        CvTest3(); //Signal/broadcasting but no body is waiting
+        CvTest3(); //Signal broadcasting but no body is waiting
         break;
     case 10:
-        CvTest4(); //Condition delete queue that is not empty
+        CvTest4(); //Condition is deleted while queue is not empty
         break;
     case 11:
         MailTest(); //MailTest for two senders and two receivers
