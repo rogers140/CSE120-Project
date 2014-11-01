@@ -83,15 +83,6 @@ Lock *extraLock = NULL;
 
 
 
-
-
-void
-LockThread4(int param)
-{
-    printf("L4:0\n");
-    locktest4->Release();
-}
-
 //----------------------------------------------------------------------
 // LockTest1 normal lock situation
 //----------------------------------------------------------------------
@@ -99,25 +90,25 @@ LockThread4(int param)
 void
 LockThread1(int param)
 {
-    printf("L1:0\n");
+    printf("L1:0 Thread 1 is created\n");
     locktest1->Acquire();
-    printf("L1:1\n");
+    printf("L1:1 Thread 1 has acquired the lock\n");
     currentThread->Yield();
-    printf("L1:2\n");
+    printf("L1:2 Thread 1 yield\n");
     locktest1->Release();
-    printf("L1:3\n");
+    printf("L1:3 Thread 1 has released the lock\n");
 }
 
 void
 LockThread2(int param)
 {
-    printf("L2:0\n");
+    printf("L2:0 Thread 2 is created\n");
     locktest1->Acquire();
-    printf("L2:1\n");
+    printf("L2:1 Thread 2 has acquired the lock\n");
     currentThread->Yield();
-    printf("L2:2\n");
+    printf("L2:2 Thread 2 yield\n");
     locktest1->Release();
-    printf("L2:3\n");
+    printf("L2:3 Thread 2 has released the lock\n");
 }
 
 void
@@ -127,6 +118,7 @@ LockTest1()
 
     locktest1 = new Lock("LockTest1");
 
+    // fork two threads
     Thread *t = new Thread("one");
     t->Fork(LockThread1, 0);
     t = new Thread("two");
@@ -135,12 +127,13 @@ LockTest1()
 
 
 //----------------------------------------------------------------------
-// LockTest3 acquire the lock twice
+// LockTest3 acquire the same lock twice
 //----------------------------------------------------------------------
 void
 LockThread3(int param)
 {
-    printf("L3:0\n");
+    printf("L3:0 \n");
+    // acquire is called twice
     locktest3->Acquire();
     locktest3->Acquire();
 }
@@ -152,7 +145,7 @@ LockTest3()
     DEBUG('t', "Acquire  Lock Twice");
 
     locktest3 = new Lock("LockTest3");
-
+    //fork one new thread
     Thread *t = new Thread("one");
     t->Fork(LockThread3, 0);
 
@@ -165,16 +158,16 @@ LockTest3()
 void
 LockThread4_1(int param)
 {
-    printf("L4:0\n");
+    printf("L4:0 Thread 1 is created\n");
     locktest4->Acquire();
-    printf("L4:1\n");
+    printf("L4:1 Thread 1 has acquired the lock\n");
     currentThread->Yield();
 }
 
 void
 LockThread4_2(int param)
 {
-    printf("L4:0\n");
+    printf("L4:0 Thread 2 is created and tried to release the lock held by thread 1\n");
     locktest4->Release();
 }
 
@@ -186,9 +179,7 @@ LockTest4()
     locktest4 = new Lock("LockTest4");
     
     Thread *t = new Thread("one");
-    //NULL situation
-    //t->Fork(LockThread4, 0);
-    // Two thread situation
+    // fork two threads
     t->Fork(LockThread4_1, 0);
     t = new Thread("two");
     t->Fork(LockThread4_2, 0);
@@ -202,7 +193,8 @@ LockTest4()
 void
 LockThread5(int param)
 {
-    printf("L5:0\n");
+    printf("L5:0 Thread 1 is created\n");
+    // acquire the lock
     locktest5->Acquire();
 }
 
@@ -213,11 +205,12 @@ LockTest5()
     DEBUG('t', "Delete a lock that is held");
 
     locktest5 = new Lock("LockTest5");
-
+    // fork one thread
     Thread *t = new Thread("one");
     t->Fork(LockThread5, 0);
     currentThread->Yield();
-    printf("%s",locktest5->holder);
+    // printf("%s",locktest5->holder); // for debug
+    //delete the lock that is currently held
     delete locktest5;
 
 }
@@ -234,16 +227,16 @@ LockTest5()
 //----------------------------------------------------------------------
 void
 cvThread0(int param){
-    printf("C1:0\n");
+    printf("C1:0 thread 1 is created\n");
     // cvLock1->Acquire();
-    printf("C1:1\n");
+    printf("C1:1 thread 1 did not get the lock\n");
     while(!sharedState){
-        printf("C1:2\n");
+        printf("C1:2 thread 1 tried to wait on cv\n");
         cv1->Wait(cvLock1);
-        printf("C1:3\n");
+        printf("C1:3 thread 1 waited on cv sucessfully\n");
     }
     ASSERT(sharedState);
-    printf("C1:4\n");
+    printf("C1:4 thread 1 waked up\n");
     // cvLock1->Release();
 
 }
@@ -254,7 +247,7 @@ CvTest0(){
 
     cvLock1 = new Lock("cvLock0");
     cv1 = new Condition("cv0");
-
+    //fork one thread
     Thread *t = new Thread("zero");
     t->Fork(cvThread0, 0);
 
@@ -265,29 +258,29 @@ CvTest0(){
 //----------------------------------------------------------------------
 void
 cvThread1(int param){
-    printf("C1:0\n");
+    printf("C1:0 thread 1 is created\n");
     cvLock1->Acquire();
-    printf("C1:1\n");
+    printf("C1:1 thread 1 has acquired the lock\n");
     while(!sharedState){
-        printf("C1:2\n");
+        printf("C1:2 thread 1 waiting on cv\n");
         cv1->Wait(cvLock1);
-        printf("C1:3\n");
+        printf("C1:3 thread 1 wake up\n");
     }
     ASSERT(sharedState);
-    printf("C1:4\n");
+    printf("C1:4 thread 1 finish\n");
     cvLock1->Release();
 
 }
 
 void
 cvThread2(int param){
-    printf("C2:0\n");
+    printf("C2:0 thread 2 is created\n");
     cvLock1->Acquire();
-    printf("C2:1\n");
+    printf("C2:1 thread 2 has acquired the lock\n");
     sharedState=1;
-    printf("C2:2\n");
+    printf("C2:2 thread 2 change sharedState\n");
     cv1->Signal(cvLock1);
-    printf("C2:3\n");
+    printf("C2:3 thread 2 signal cv\n");
     cvLock1->Release();
 }
 
@@ -297,7 +290,7 @@ CvTest1(){
 
     cvLock1 = new Lock("cvLock1");
     cv1 = new Condition("cv1");
-
+    // fork 2 threads
     Thread *t = new Thread("one");
     t->Fork(cvThread1, 0);
     t = new Thread("two");
@@ -310,44 +303,43 @@ CvTest1(){
 //----------------------------------------------------------------------
 void
 cvThread3(int param){
-    printf("C3:0\n");
+    printf("C3:0 thread 3 is created\n");
     cvLock1->Acquire();
-    printf("C3:1\n");
+    printf("C3:1 thread 3 acquired the lock\n");
     while(!sharedState){
-        printf("C3:2\n");
+        printf("C3:2 thread 3 is waiting on cv\n");
         cv1->Wait(cvLock1);
-        printf("C3:3\n");
+        printf("C3:3 thread 3 wake up\n");
     }
     ASSERT(sharedState);
-    printf("C3:4\n");
+    printf("C3:4 thread 3 finish\n");
     cvLock1->Release();
 }
 
 void
 cvThread4(int param){
-    printf("C4:0\n");
+    printf("C4:0 thread 4 is created\n");
     cvLock1->Acquire();
-    printf("C4:1\n");
+    printf("C4:1 thread 4 acquired the lock\n");
     while(!sharedState){
-        printf("C4:2\n");
+        printf("C4:2 thread 4 waiting on cv\n");
         cv1->Wait(cvLock1);
-        printf("C4:3\n");
+        printf("C4:3 thread 4 wake up\n");
     }
     ASSERT(sharedState);
-    printf("C4:4\n");
+    printf("C4:4 thread 4 finish\n");
     cvLock1->Release();
 }
 
 void
 cvThread5(int param){
-    printf("C5:0\n");
+    printf("C5:0 thread 5 is created\n");
     cvLock1->Acquire();
-    printf("C5:1\n");
+    printf("C5:1 thread 5 acquired the lock\n");
     sharedState=1;
-    printf("C5:2\n");
+    printf("C5:2 thread 5 changed sharedState\n");
     cv1->Broadcast(cvLock1);
-    // delete cv1;
-    printf("C5:3\n");
+    printf("C5:3 thread 5 broadcast\n");
     cvLock1->Release();
 }
 
@@ -357,7 +349,7 @@ CvTest2(){
 
     cvLock1 = new Lock("cvLock2");
     cv1 = new Condition("cv2");
-
+    // fork 3 threads
     Thread *t = new Thread("three");
     t->Fork(cvThread3, 0);
     t = new Thread("four");
@@ -371,6 +363,28 @@ CvTest2(){
 // CvTest3 Signal/broadcasting but no body is waiting
 //----------------------------------------------------------------------
 
+void
+cvThread6(int param){
+    printf("C6:0 thread 6 is created\n");
+    cvLock1->Acquire();
+    printf("C6:1 thread 6 has acquired the lock\n");
+    cv1->Wait(cvLock1);
+    printf("C6:2 thread 6 wake up\n");
+    cvLock1->Release();
+    printf("C6:3 thread 6 finish\n");
+}
+
+void
+cvThread7(int param){
+    printf("C7:0 thread7 is created\n");
+    cvLock1->Acquire();
+    printf("C7:1 thread7 has acquired the lock\n");
+    cv1->Wait(cvLock1);
+    printf("C7:2 thread7 wake up\n");
+    cvLock1->Release();
+    printf("C7:3 thread7 finish\n");
+    
+}
 
 void
 CvTest3(){
@@ -378,61 +392,50 @@ CvTest3(){
 
     cvLock1 = new Lock("cvLock3");
     cv1 = new Condition("cv3");
-
+    //fork four threads
     Thread *t = new Thread("two");
     t->Fork(cvThread2, 0);
     t = new Thread("five");
     t->Fork(cvThread5, 0);
-    t = new Thread("three");
-    t->Fork(cvThread3, 0);
-    t = new Thread("four");
-    t->Fork(cvThread4, 0);
+    t = new Thread("six");
+    t->Fork(cvThread6, 0);
+    t = new Thread("seven");
+    t->Fork(cvThread7, 0);
 
-} // problem exist! here
+}
 
 //----------------------------------------------------------------------
 // CvTest4 Condition delete queue that is not empty
 //----------------------------------------------------------------------
 void
 cvThread8(int param){
-    printf("C8:0\n");
+    printf("C8:0 thread 8 is created\n");
     cvLock1->Acquire();
-    printf("C8:1\n");
-    while(!sharedState){
-        printf("C8:2\n");
-        cv1->Wait(cvLock1);
-        printf("C8:3\n");
-    }
-    ASSERT(sharedState);
-    printf("C8:4\n");
+    printf("C8:1 thread 8 acquired the lock\n");
+    cv1->Wait(cvLock1);
+    printf("C8:2 thread 8 wake up\n");
     cvLock1->Release();
+    printf("C8:3 thread 8 finish\n");
 }
 
 void
 cvThread9(int param){
-    printf("C9:0\n");
+    printf("C9:0 thread 9 is created\n");
     cvLock1->Acquire();
-    printf("C9:1\n");
-    while(!sharedState){
-        printf("C9:2\n");
-        cv1->Wait(cvLock1);
-        printf("C9:3\n");
-    }
-    ASSERT(sharedState);
-    printf("C9:4\n");
+    printf("C9:1 thread 9 acquired the lock\n");
+    cv1->Wait(cvLock1);
+    printf("C9:2 thread 9 wake up\n");
     cvLock1->Release();
+    printf("C9:3 thread 9 finish\n");
 }
 
 void
 cvThread10(int param){
-    printf("C10:0\n");
+    printf("C10:0 thread 10 is created\n");
     cvLock1->Acquire();
-    printf("C10:1\n");
-    sharedState=1;
-    printf("C10:2\n");
-    // cv1->Broadcast(cvLock1);
+    printf("C10:1 thread 10 delete the lock\n");
     delete cv1;
-    printf("C10:3\n");
+    printf("C10:2 thread 10 finish\n");
     cvLock1->Release();
 }
 
@@ -442,7 +445,7 @@ CvTest4(){
 
     cvLock1 = new Lock("cvLock4");
     cv1 = new Condition("cv4");
-
+    // fork 3 threads
     Thread *t = new Thread("eight");
     t->Fork(cvThread8, 0);
     t = new Thread("nine");
@@ -458,34 +461,34 @@ CvTest4(){
 //----------------------------------------------------------------------
 void
 mailThread1(int param){
-    printf("C1:0\n");   
-    printf("%d\n",1);
+    printf("C1:0 this is sender 1\n");   
+    printf("The mail sender 1 send is %d\n",1);
     mb->Send(1);
 }
 
 void
 mailThread2(int param){
-    printf("C2:0\n");
-    printf("%d\n",2);
+    printf("C2:0 this is sender 2\n");
+    printf("The mail sender 2 send is %d\n",2);
     mb->Send(2);
 }
 
 void
 mailThread3(int param){
-    printf("C3:0\n");
+    printf("C3:0 this is receiver1\n");
     int tmp = 0;
     int *result1 = &tmp;
     mb->Receive(result1);
-    printf("%d\n",*result1);
+    printf("The mail receiver1 get is %d\n",*result1);
 }
 
 void
 mailThread4(int param){
-    printf("C4:0\n");
+    printf("C4:0 this is receiver2\n");
     int tmp = 0;
     int *result2 = &tmp;
     mb->Receive(result2);
-    printf("%d\n",*result2);
+    printf("The mail receiver2 get is %d\n",*result2);
 }
 
 void
@@ -493,7 +496,7 @@ MailTest(){
     DEBUG('t', "Mailbox Text");
 
     mb = new Mailbox("mailbox");
-
+    // fork 4 threads 2 as sender 2 as receiver
     Thread *t = new Thread("one");
     t->Fork(mailThread1, 0);
     t = new Thread("two");
@@ -502,6 +505,41 @@ MailTest(){
     t->Fork(mailThread3, 0);
     t = new Thread("four");
     t->Fork(mailThread4, 0);
+
+}
+//----------------------------------------------------------------------
+// MailTest for one sender and two receivers
+//----------------------------------------------------------------------
+void
+MailTest2(){
+    DEBUG('t', "Mailbox Text");
+
+    mb = new Mailbox("mailbox");
+    // fork 4 threads 2 as sender 2 as receiver
+    Thread *t = new Thread("one");
+    t->Fork(mailThread1, 0);
+    t = new Thread("three");
+    t->Fork(mailThread3, 0);
+    t = new Thread("four");
+    t->Fork(mailThread4, 0);
+
+}
+
+//----------------------------------------------------------------------
+// MailTest for two senders and one receiver
+//----------------------------------------------------------------------
+void
+MailTest3(){
+    DEBUG('t', "Mailbox Text");
+
+    mb = new Mailbox("mailbox");
+    // fork 4 threads 2 as sender 2 as receiver
+    Thread *t = new Thread("one");
+    t->Fork(mailThread1, 0);
+    t = new Thread("two");
+    t->Fork(mailThread2, 0);
+    t = new Thread("three");
+    t->Fork(mailThread3, 0);
 
 }
 
@@ -556,7 +594,7 @@ Joinee()
 
 //----------------------------------------------------------------------
 // ForkerThread1 common join test
-// when yieldTimes = 10 joinee is only destroy after join() is called
+// when yieldTimes = 5 joinee is only destroy after join() is called
 //----------------------------------------------------------------------
 
 void
@@ -582,8 +620,8 @@ ForkerThread2()
   Thread *joiner = new Thread("joiner", 1);  // will not be joined
   //Thread *joinee = new Thread("joinee", 1);  // WILL be joined
 
-  // fork off the two threads and let them do their business
-  joiner->Fork((VoidFunctionPtr) Joiner, (int) joiner);
+ 
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joiner);     // only one thread is forked and this thread join itself
   //joinee->Fork((VoidFunctionPtr) Joinee, 0);
 
   // this thread is done and can go on its merry way
@@ -603,8 +641,9 @@ ForkerThread3()
   // fork off the two threads and let them do their business
   joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
   joinee->Fork((VoidFunctionPtr) Joinee, 0);
-
-  joinee->Finish();
+  
+  
+  joinee->Finish();   //finish before joinee has joined
 
   // this thread is done and can go on its merry way
   printf("Forked off the joiner and joiner threads.\n");
@@ -620,7 +659,7 @@ ForkerThread4()
   Thread *joinee = new Thread("joinee", 1);  // WILL be joined
 
   // fork off the two threads and let them do their business
-  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
+  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);    // no forked has been called on joinee so it cannot join!
   // joinee->Fork((VoidFunctionPtr) Joinee, 0);
 
 
@@ -641,7 +680,7 @@ ForkerThread5()
   // fork off the two threads and let them do their business
   joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
   joinee->Fork((VoidFunctionPtr) Joinee, 0);
-  joiner->Join();
+  joiner->Join();     // joiner cannot join as it is not created to join!
 
 
 
@@ -661,7 +700,7 @@ ForkerThread6()
   // fork off the two threads and let them do their business
   joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
   joinee->Fork((VoidFunctionPtr) Joinee, 0);
-  joinee->Join();
+  joinee->Join();     // joinee is joined first here then second time in function Joiner which is wrong
 
 
 
@@ -972,49 +1011,48 @@ ExtraLock(){
 
 void
 extraJoinThread1(int para){//joinee
-    printf("eL1:0\n");
-    printf("cur1 %s pri is %d\n",currentThread->getName(),currentThread->getPriority());
-    //currentThread->Yield();
-    printf("eL1:1\n");
-    //currentThread->Yield();
-    printf("cur2 %s pri is %d\n",currentThread->getName(),currentThread->getPriority());
-    printf("eL1:2\n");
-    //currentThread->Yield();
-    printf("eL1:3\n");
+    printf("eJ1:0 this is joinee thread 3 with priority %d STEP ONE\n", currentThread->getPriority());
+    printf("eL1:1 this is joinee thread 3 with priority %d STEP TWO\n", currentThread->getPriority());
+    printf("eL1:2 this is joinee thread 3 with priority %d STEP THREE\n", currentThread->getPriority());
 
 }
 void
 extraJoinThread2(){//middle
-    printf("eL2:0\n");
+    printf("eJ2:0 this is middle thread 2 with priority always 25 STEP ONE\n");
     currentThread->Yield();
-    printf("eL2:1\n");
-    //currentThread->Yield();
-    printf("eL2:2\n");
-   // ASSERT(FALSE);  //ABORT means running forever.
+    printf("eL2:1 his is middle thread 2 with priority always 25 STEP TWO\n");
+    printf("eL2:2 his is middle thread 2 with priority always 25 STEP TWO\n");
 }
 void
 extraJoinThread3(Thread* joinee){//joiner
-    printf("eL3:0\n");
+    printf("eJ3:0 this is joiner thread 1 with priority %d STEP ONE\n", currentThread->getPriority());
+    printf("eJ3:0 and my joinee has the priority %d\n",joinee->getPriority());
     currentThread->Yield();
     currentThread->Yield();
     currentThread->Yield();
+    printf("eJ3:0 my joinee is going to join me!\n");
     joinee->Join();
-    printf("jee %s pri is %d\n",joinee->getName(),joinee->getPriority());
-    //currentThread->Yield();
-    printf("eL3:1\n");
-    printf("eL3:2\n");
+    printf("eJ3:1 this is joiner thread 1 with priority %d STEP TWO\n", currentThread->getPriority());
+    printf("eJ3:2 this is joiner thread 1 with priority %d STEP THREE\n", currentThread->getPriority());
 }
+
+// thread 1 has the lowest priority and is the joinee
+// thread 2 has the middle priority
+// thread 3 has the highest priorty and is the joiner
 void 
 ExtraJoin()
 {
     Thread *joiner = new Thread("joiner", 0);  // will not be joined
     Thread *joinee = new Thread("joinee", 1);  // WILL be joined
   
-    joiner->setPriority(10);
-    joinee->setPriority(50);
+    joiner->setPriority(10);  // joiner thread priority 10
+    joinee->setPriority(50);  // joinee thread priority 50
 
     Thread *t = new Thread("middle");
-    t->setPriority(25);
+    t->setPriority(25);   // middle thread priority 25
+    
+
+    //fork those three
     joiner->Fork((VoidFunctionPtr)extraJoinThread3, (int) joinee);
     currentThread->Yield();
     joinee->Fork(extraJoinThread1, 0);
@@ -1122,7 +1160,7 @@ ThreadTest()
         ForkerThread();
     break;
     case 13:
-        yieldTimes=5;
+        yieldTimes=5;  // this test is special as it allows the joinee to finish first and join after the joinee finishes
         ForkerThread();
     break;
     case 14:
@@ -1160,6 +1198,12 @@ ThreadTest()
     break; 
     case 25:
         ExtraJoin();
+    break;
+    case 26:
+        MailTest2();
+    break;
+    case 27:
+        MailTest3();
     break;
     default:
 	printf("No test specified.\n");
