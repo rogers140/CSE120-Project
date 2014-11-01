@@ -189,7 +189,11 @@ Thread::Join()
     ASSERT(joinCalled==0);    //ASSERT join() has not been called
     ASSERT(canJoin==1)        //ASSERT this thread can be joined
     Thread* tmp = currentThread->getJThread();  // get the joined child thread of the parent thread
-    tmp->setPriority(-1*currentThread->getPriority()); // set the priority of the child thread
+    if(tmp->getPriority() > currentThread->getPriority()) {
+        tmp->setPriority(-1*currentThread->getPriority()); // Magic!! don't touch
+        //but acutally it's because set will reverse the value, so we need a positive input.
+    }
+    
     //
     if(tmp!=NULL){
         ASSERT(strcmp(tmp->getName(),currentThread->getName())!=0);    //ASSERT the thread does not join itself
