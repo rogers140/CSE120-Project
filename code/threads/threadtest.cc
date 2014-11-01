@@ -198,7 +198,6 @@ LockThread5(int param)
     locktest5->Acquire();
 }
 
-
 void
 LockTest5()
 {
@@ -281,6 +280,7 @@ cvThread2(int param){
     printf("C2:2 thread 2 change sharedState\n");
     cv1->Signal(cvLock1);
     printf("C2:3 thread 2 signal cv\n");
+    printf("C2:4 thread 2 finish\n");
     cvLock1->Release();
 }
 
@@ -441,7 +441,7 @@ cvThread10(int param){
 
 void
 CvTest4(){
-    DEBUG('t', "Condition variable broadcast");
+    DEBUG('t', "delete cv which is waited by others");
 
     cvLock1 = new Lock("cvLock4");
     cv1 = new Condition("cv4");
@@ -543,12 +543,40 @@ MailTest3(){
 
 }
 
+
 //----------------------------------------------------------------------
 // Join test
 //----------------------------------------------------------------------
 
 void
 Joiner(Thread *joinee)
+{
+  for(int i=0;i < yieldTimes;i++){
+    currentThread->Yield();
+  }
+  printf("Waiting for the Joinee to finish executing.\n");
+
+  currentThread->Yield();
+  currentThread->Yield();
+
+  // Note that, in this program, the "joinee" has not finished
+  // when the "joiner" calls Join().  You will also need to handle
+  // and test for the case when the "joinee" _has_ finished when
+  // the "joiner" calls Join().
+
+  joinee->Join();
+  
+  currentThread->Yield();
+  currentThread->Yield();
+
+  printf("Joinee has finished executing, we can continue.\n");
+
+  currentThread->Yield();
+  currentThread->Yield();
+}
+// another version of joiner function in which join is called twice
+void
+Joiner2(Thread *joinee)
 {
   for(int i=0;i<yieldTimes;i++){
     currentThread->Yield();
@@ -565,8 +593,49 @@ Joiner(Thread *joinee)
   // the "joiner" calls Join().
 
   joinee->Join();
-  printf("pri!%d\n",joinee->getPriority());
-  printf("cupri!%d\n",currentThread->getPriority());
+  joinee->Join();
+  
+  currentThread->Yield();
+  currentThread->Yield();
+
+  printf("Joinee has finished executing, we can continue.\n");
+
+  currentThread->Yield();
+  currentThread->Yield();
+}
+void
+Joinee()
+{
+  int i;
+  for (i = 0; i < 5; i++) {
+    printf("Smell the roses.\n");
+    currentThread->Yield();
+  }
+
+  currentThread->Yield();
+  printf("Done smelling the roses!\n");
+  currentThread->Yield();
+}
+//
+void
+Joinee3();
+void
+Joiner3(Thread *joinee)
+{
+  for(int i=0;i < yieldTimes;i++){
+    currentThread->Yield();
+  }
+  printf("Waiting for the Joinee to finish executing.\n");
+
+  currentThread->Yield();
+  currentThread->Yield();
+
+  // Note that, in this program, the "joinee" has not finished
+  // when the "joiner" calls Join().  You will also need to handle
+  // and test for the case when the "joinee" _has_ finished when
+  // the "joiner" calls Join().
+  joinee->Fork((VoidFunctionPtr) Joinee3, 0);
+  joinee->Join();
   
   currentThread->Yield();
   currentThread->Yield();
@@ -577,11 +646,12 @@ Joiner(Thread *joinee)
   currentThread->Yield();
 }
 
+//another version of joinee in which finish is called before join is called
 void
-Joinee()
+Joinee3()
 {
   int i;
-
+  currentThread->Finish();
   for (i = 0; i < 5; i++) {
     printf("Smell the roses.\n");
     currentThread->Yield();
@@ -628,7 +698,6 @@ ForkerThread2()
   printf("Forked off the joiner and joiner threads.\n");
 }
 
-
 //----------------------------------------------------------------------
 // ForkerThread3 finish before join() called
 //----------------------------------------------------------------------
@@ -639,11 +708,8 @@ ForkerThread3()
   Thread *joinee = new Thread("joinee", 1);  // WILL be joined
 
   // fork off the two threads and let them do their business
-  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
-  joinee->Fork((VoidFunctionPtr) Joinee, 0);
+  joiner->Fork((VoidFunctionPtr) Joiner3, (int) joinee);
   
-  
-  joinee->Finish();   //finish before joinee has joined
 
   // this thread is done and can go on its merry way
   printf("Forked off the joiner and joiner threads.\n");
@@ -698,14 +764,9 @@ ForkerThread6()
   Thread *joinee = new Thread("joinee", 1);  // WILL be joined
 
   // fork off the two threads and let them do their business
-  joiner->Fork((VoidFunctionPtr) Joiner, (int) joinee);
+  joiner->Fork((VoidFunctionPtr) Joiner2, (int) joinee);
   joinee->Fork((VoidFunctionPtr) Joinee, 0);
-  joinee->Join();     // joinee is joined first here then second time in function Joiner which is wrong
-
-
-
-  // this thread is done and can go on its merry way
-  printf("Forked off the joiner and joiner threads.\n");
+  //joinee->Join();     // joinee is joined first here then second time in function Joiner which is wrong
 }
 
 //----------------------------------------------------------------------
@@ -714,9 +775,14 @@ ForkerThread6()
 // this is thread one and its priority is 10.
 void
 priThread1(int param){
-    printf("C1:0: high priority thread coming and then yield\n");
-    currentThread->Yield();
-    printf("C1:1: high priority thread finish\n");
+
+    printf("C1:0: low priority thread coming and then yield\n");
+    for(int i=0;i<3;i++){
+            printf("low priority is running\n");
+            currentThread->Yield();
+    }
+    
+    printf("C1:1: low priority thread finish\n");
     
 }
 
@@ -724,22 +790,31 @@ priThread1(int param){
 void
 priThread2(int param){
     printf("C2:0: mid priority thread coming and then yield\n");
-    currentThread->Yield();
+    for(int i=0;i<3;i++){
+            printf("mid priority is running\n");
+            currentThread->Yield();
+    }
+    
     printf("C2:1: mid priority thread finish\n");  
 }
 
 // this is thread three and its priority is 50.
 void
 priThread3(int param){
-    printf("C3:0: low priority thread coming and then yield\n"); 
-    currentThread->Yield();
-    printf("C3:1: low priority thread finish\n");  
+    printf("C3:0: high priority thread coming and then yield\n"); 
+    for(int i=0;i<3;i++){
+            printf("high priority is running\n");
+            currentThread->Yield();
+    }
+    printf("C3:1: high priority thread finish\n");  
 }
 
 // context swich between different priority threads, high priority one always runs first
 void
 PriTest(){
     DEBUG('t', "Priority Text");
+    
+   
     Thread *t = new Thread("one");
     t->setPriority(10);
     t->Fork(priThread1, 0);
@@ -751,64 +826,9 @@ PriTest(){
     t = new Thread("three");
     t->setPriority(50);
     t->Fork(priThread3, 0);
+    
 }
 
-//----------------------------------------------------------------------
-// PriLock threads with different priority while waiting to acquire Lock
-//----------------------------------------------------------------------
-// this is thread one and its priority is 10.
-void
-priLockThread1(int param){
-    printf("pL1:0: high priority thread coming\n");
-    priLock->Acquire();
-    printf("pL1:1: high priority thread holding the lock\n");
-    currentThread->Yield();
-    currentThread->Yield();
-    printf("pL1:2\n");
-    priLock->Release();
-    printf("pL1:3: high priority thread release the lock\n");
-}
-
-// this is thread two and its priority is 50.
-void
-priLockThread2(int param){
-    printf("pL2:0: low priority thread coming\n");
-    priLock->Acquire();
-    printf("pL2:1: low priority thread holding the lock\n");
-    currentThread->Yield();
-    printf("pL2:2\n");
-    priLock->Release();
-    printf("pL2:3: low priority thread release the lock\n");
-}
-
-// this is thread three and its priority is 25.
-void
-priLockThread3(int param){
-    printf("pL3:0: mid priority thread coming\n");
-    priLock->Acquire();
-    printf("pL3:1: mid priority thread holding the lock\n");
-    currentThread->Yield();
-    printf("pL3:2\n");
-    priLock->Release();
-    printf("pL3:3: mid priority thread release the lock\n");
-}
-
-// thread one holds the lock and other two threads wait.
-// once thread one releases, the high priority thread gets the lock.
-void
-PriLock(){
-    DEBUG('t', "PriorityLock Text");
-    priLock = new Lock("priLock");
-    Thread *t = new Thread("one");
-    t->setPriority(10);
-    t->Fork(priLockThread1, 0);
-    t = new Thread("two");
-    t->setPriority(50);
-    t->Fork(priLockThread2, 0);
-    t = new Thread("three");
-    t->setPriority(25);
-    t->Fork(priLockThread3, 0);
-}
 
 
 //----------------------------------------------------------------------
@@ -856,11 +876,11 @@ PriSema(){
     DEBUG('t', "PrioritySemaphore Text");
     priSemaphore = new Semaphore("priSemaphore", 0);
     Thread *t = new Thread("one");
-    t->setPriority(50);
+    t->setPriority(25);
     t->Fork(priSemaThread1, 0);
     currentThread->Yield();
     t = new Thread("two");
-    t->setPriority(25);
+    t->setPriority(50);
     t->Fork(priSemaThread2, 0);
     currentThread->Yield();
     t = new Thread("three");
@@ -876,7 +896,7 @@ PriSema(){
 //----------------------------------------------------------------------
 // PriCV threads with different priority while waiting condition variable
 //----------------------------------------------------------------------
-// this is thread two and its priority is 50.
+// this is thread two and its priority is 25.
 void
 priCVThread1(int para){
     printf("pCV1:0: low priority thread coming\n");
@@ -888,7 +908,7 @@ priCVThread1(int para){
     printf("pCV1:3: low priority thread release the lock\n");
 }
 
-// this is thread two and its priority is 25.
+// this is thread two and its priority is 50.
 void
 priCVThread2(int para){
     printf("pCV2:0: high priority thread coming\n");
@@ -933,11 +953,11 @@ PriCV(){
     priCV = new Condition("priCV");
     priCVLock = new Lock("priCVLock");
     Thread *t = new Thread("one");
-    t->setPriority(50);
+    t->setPriority(25);
     t->Fork(priCVThread1, 0);
     currentThread->Yield();
     t = new Thread("two");
-    t->setPriority(25);
+    t->setPriority(50);
     t->Fork(priCVThread2, 0);
     currentThread->Yield();
     t = new Thread("three");
@@ -949,40 +969,117 @@ PriCV(){
     t->Fork(priCVThread4, 0);
 }
 
+
+//----------------------------------------------------------------------
+// PriLock threads with different priority while competing to acquire Lock
+//----------------------------------------------------------------------
+void priLockThread1(int param);
+void priLockThread2(int param);
+void priLockThread3(int param);
+void
+priLockThread1(int param){
+    printf("pL1:0: low priority thread coming\n");
+    priLock->Acquire();
+    printf("pL1:1: low priority thread holding the lock\n");
+
+    Thread *t = new Thread("two");
+    t->setPriority(50);
+    t->Fork(priLockThread2, 0);//fork a high priority thread
+    currentThread->Yield();
+    printf("pL1:2\n");
+
+    t = new Thread("three");
+    t->setPriority(25);
+    t->Fork(priLockThread3, 0);//fork a medium priority thread
+    currentThread->Yield();
+    priLock->Release();
+
+    printf("pL1:3: low priority thread release the lock\n");
+}
+
+// this is thread two and its priority is 50.
+void
+priLockThread2(int param){
+    printf("pL2:0: high priority thread coming\n");
+    priLock->Acquire();
+    printf("pL2:1: high priority thread holding the lock\n");
+    printf("pL2:2\n");
+    priLock->Release();
+    printf("pL2:3: high priority thread release the lock\n");
+}
+
+// this is thread three and its priority is 25.
+void
+priLockThread3(int param){
+    printf("pL3:0: mid priority thread coming\n");
+    priLock->Acquire();
+    printf("pL3:1: mid priority thread holding the lock\n");
+    printf("pL3:2\n");
+    priLock->Release();
+    printf("pL3:3: mid priority thread release the lock\n");
+}
+
+// thread one holds the lock and other two threads wait.
+// once thread one releases, the high priority thread gets the lock.
+void
+PriLock(){
+    DEBUG('t', "PriorityLock Text");
+    priLock = new Lock("priLock");
+    Thread *t = new Thread("one");
+    t->setPriority(10);
+    t->Fork(priLockThread1, 0);   
+}
+
+
 //----------------------------------------------------------------------
 // ExtraLock deal with priority inversion in Lock (Extra credit)
 //----------------------------------------------------------------------
 // this is thread two and its priority is 50.
+void extraLockThread1(int param);
+void extraLockThread2(int param);
+void extraLockThread3(int param);
 void
 extraLockThread1(int para){
     printf("eL1:0: Low priority thread coming\n");
     extraLock->Acquire();
     printf("eL1:1: Low priority thread holding lock\n");
-    currentThread->Yield();
-    currentThread->Yield();
+    Thread *t = new Thread("two");
+    
+    t->setPriority(25);
+    t->Fork(extraLockThread2, 0);
+    //currentThread->Yield();
+
+    t = new Thread("three");
+    t->setPriority(50);
+    t->Fork(extraLockThread3, 0);
     currentThread->Yield();
     printf("eL1:2\n");
+    
     extraLock->Release();
     printf("eL1:3: Low priority thread release lock\n");
 }
-
 // this is thread two and its priority is 25.
 void
-extraLockThread2(int para){
+extraLockThread2(int para){//mid
     printf("eL2:0: mid priority thread coming\n");
     printf("eL2:1\n");
+    for(int i = 0; i < 5; ++i) {
+        printf("mid is running %d\n", i);
+        currentThread->Yield();
+    }
     printf("eL2:2\n");
     printf("mid priority thread finish\n");
 }
 
 // this is thread two and its priority is 10.
 void
-extraLockThread3(int para){
+extraLockThread3(int para){//high
     printf("eL3:0: high priority thread coming\n");
     extraLock->Acquire();
     printf("eL3:1: high priority thread holding lock\n");
     extraLock->Release();
     printf("eL3:2: high priority thread release lock\n");
+
 }
 
 // thread one with low priority holding the lock,
@@ -994,46 +1091,54 @@ ExtraLock(){
     DEBUG('t', "Priority inversion in Lock");
     extraLock = new Lock("extraLock");
     Thread *t = new Thread("one");
-    t->setPriority(50);
-    t->Fork(extraLockThread1, 0);
-    currentThread->Yield();
-    t = new Thread("three");
     t->setPriority(10);
-    t->Fork(extraLockThread3, 0);
-    currentThread->Yield();
-    t = new Thread("two");
-    t->setPriority(25);
-    t->Fork(extraLockThread2, 0);
+    t->Fork(extraLockThread1, 0);
+    
+ 
+    
+  
 }
+
 //----------------------------------------------------------------------
 // ExtraJoin deal with priority inversion in Join (Extra credit)
 //----------------------------------------------------------------------
-
+void extraJoinThread2();
+void extraJoinThread3(Thread* joinee);
 void
 extraJoinThread1(int para){//joinee
-    printf("eJ1:0 this is joinee thread 3 with priority %d STEP ONE\n", currentThread->getPriority());
-    printf("eL1:1 this is joinee thread 3 with priority %d STEP TWO\n", currentThread->getPriority());
-    printf("eL1:2 this is joinee thread 3 with priority %d STEP THREE\n", currentThread->getPriority());
+    Thread *joiner = new Thread("joiner", 0);  // will not be joined
+    joiner->setPriority(50);  // joiner thread priority 10
+    Thread *t = new Thread("middle");
+    t->setPriority(25);   // middle thread priority 25
+    printf("eJ1:0 this is joinee thread 3 with priority %d STEP ONE\n", (-1) * currentThread->getPriority());
+    joiner->Fork((VoidFunctionPtr)extraJoinThread3, (int) currentThread);
+    currentThread->Yield();
+    t->Fork((VoidFunctionPtr)extraJoinThread2,0);
+    currentThread->Yield();
+    
+    printf("eL1:1 this is joinee thread 3 with priority %d STEP TWO\n", (-1) * currentThread->getPriority());
+    printf("eL1:2 this is joinee thread 3 with priority %d STEP THREE\n", (-1) * currentThread->getPriority());
 
 }
 void
 extraJoinThread2(){//middle
-    printf("eJ2:0 this is middle thread 2 with priority always 25 STEP ONE\n");
-    currentThread->Yield();
-    printf("eL2:1 his is middle thread 2 with priority always 25 STEP TWO\n");
-    printf("eL2:2 his is middle thread 2 with priority always 25 STEP TWO\n");
+    printf("eJ2:0 this is middle thread coming\n");
+    for(int i = 0; i < 5; ++i) {
+        printf("mid is running %d\n", i);
+        currentThread->Yield();
+    }
 }
 void
 extraJoinThread3(Thread* joinee){//joiner
-    printf("eJ3:0 this is joiner thread 1 with priority %d STEP ONE\n", currentThread->getPriority());
-    printf("eJ3:0 and my joinee has the priority %d\n",joinee->getPriority());
+    printf("eJ3:0 this is joiner thread 1 with priority %d STEP ONE\n", (-1) * currentThread->getPriority());
+    printf("eJ3:0 and my joinee has the priority %d\n",(-1) * joinee->getPriority());
     currentThread->Yield();
     currentThread->Yield();
     currentThread->Yield();
     printf("eJ3:0 my joinee is going to join me!\n");
     joinee->Join();
-    printf("eJ3:1 this is joiner thread 1 with priority %d STEP TWO\n", currentThread->getPriority());
-    printf("eJ3:2 this is joiner thread 1 with priority %d STEP THREE\n", currentThread->getPriority());
+    printf("eJ3:1 this is joiner thread 1 with priority %d STEP TWO\n", (-1) * currentThread->getPriority());
+    printf("eJ3:2 this is joiner thread 1 with priority %d STEP THREE\n", (-1) * currentThread->getPriority());
 }
 
 // thread 1 has the lowest priority and is the joinee
@@ -1042,23 +1147,20 @@ extraJoinThread3(Thread* joinee){//joiner
 void 
 ExtraJoin()
 {
-    Thread *joiner = new Thread("joiner", 0);  // will not be joined
+    
     Thread *joinee = new Thread("joinee", 1);  // WILL be joined
   
-    joiner->setPriority(10);  // joiner thread priority 10
-    joinee->setPriority(50);  // joinee thread priority 50
+    
+    joinee->setPriority(10);  // joinee thread priority 50
 
-    Thread *t = new Thread("middle");
-    t->setPriority(25);   // middle thread priority 25
+   
     
 
     //fork those three
-    joiner->Fork((VoidFunctionPtr)extraJoinThread3, (int) joinee);
-    currentThread->Yield();
     joinee->Fork(extraJoinThread1, 0);
     currentThread->Yield();
-    t->Fork((VoidFunctionPtr)extraJoinThread2,0);
-    currentThread->Yield();
+    
+    
 }
 
 //----------------------------------------------------------------------
@@ -1115,98 +1217,97 @@ void WhaleMateTest() {
     t->Fork(Whale7, 0);
 }
 
-
-
-
-
+//----------------------------------------------------------------------
+// Main Test
+//----------------------------------------------------------------------
 void
 ThreadTest()
 {
     switch (testnum) {
     case 1:
 	    ThreadTest1();
-	break;
+	    break;
     case 2:
-        LockTest1();
-	break;
+        LockTest1(); //noraml lock test
+	    break;
     case 3:
-        LockTest3();
+        LockTest3(); //acquire same lock twice
         break;
     case 4:
-        LockTest4();
+        LockTest4(); //release lock that is not held
         break;
     case 5:
-        LockTest5();
+        LockTest5(); //delete a lock that is not released
         break;
     case 6:
-        CvTest0();
+        CvTest0(); //condition variable not holding the lock
         break;
     case 7:
-        CvTest1();
+        CvTest1(); //condition variable signal
         break;
     case 8:
-        CvTest2();
+        CvTest2(); //condition variable broadcast
         break;
     case 9:
-        CvTest3();
+        CvTest3(); //Signal/broadcasting but no body is waiting
         break;
     case 10:
-        CvTest4();
+        CvTest4(); //Condition delete queue that is not empty
         break;
     case 11:
-        MailTest();
+        MailTest(); //MailTest for two senders and two receivers
         break;
     case 12:
-        ForkerThread();
-    break;
+        ForkerThread(); //common join test
+        break;
     case 13:
-        yieldTimes=5;  // this test is special as it allows the joinee to finish first and join after the joinee finishes
+        yieldTimes=10;  // this test is special as it allows the joinee to finish first and join after the joinee finishes
         ForkerThread();
-    break;
+        break;
     case 14:
-        ForkerThread2();
-    break;
+        ForkerThread2(); //join itself
+        break;
     case 15:
-        ForkerThread3();
-    break;
+        ForkerThread3(); //finish before join() called
+        break;
     case 16:
-        ForkerThread4();
-    break;
+        ForkerThread4(); //join() can only be called after fork() is called
+        break;
     case 17:
-        ForkerThread5();
-    break;
+        ForkerThread5(); //only thread created to be joined can be joined
+        break;
     case 18:
-        ForkerThread6();
-    break;
+        ForkerThread6(); //join can only be called once
+        break;
     case 19:
-        PriTest();
-    break;
+        PriTest(); //context swich between different priority threads
+        break;
     case 20:
-        PriLock();
-    break;
+        PriLock(); //threads with different priority while competing to acquire Lock
+        break;
     case 21:
-        PriSema(); 
-    break;
+        PriSema(); //threads with different priority while competing semaphore
+        break;
     case 22:
-        PriCV();
-    break; 
-        case 23:
-        WhaleMateTest();
+        PriCV(); //threads with different priority while competing condition variable
+        break; 
+    case 23:
+        WhaleMateTest(); //Whale Test
         break;
     case 24:
-        ExtraLock();
-    break; 
+        ExtraLock(); //deal with priority inversion in Lock (Extra credit)
+        break; 
     case 25:
-        ExtraJoin();
-    break;
+        ExtraJoin(); //deal with priority inversion in Join (Extra credit)
+        break;
     case 26:
-        MailTest2();
-    break;
+        MailTest2(); //MailTest for one sender and two receivers
+        break;
     case 27:
-        MailTest3();
-    break;
+        MailTest3(); //MailTest for two senders and one receiver
+        break;
     default:
-	printf("No test specified.\n");
-	break;
+	    printf("No test specified.\n");
+	    break;
     }
 }

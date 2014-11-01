@@ -58,7 +58,6 @@ Scheduler::ReadyToRun (Thread *thread)
     thread->setStatus(READY);
     readyList->SortedInsert((void *)thread,thread->getPriority());
 }
-
 //----------------------------------------------------------------------
 // Scheduler::FindNextToRun
 // 	Return the next thread to be scheduled onto the CPU.
@@ -70,7 +69,21 @@ Scheduler::ReadyToRun (Thread *thread)
 Thread *
 Scheduler::FindNextToRun ()
 {
-    return (Thread *)readyList->SortedRemove(NULL);
+    List *tmplist = new List();
+    Thread *t = (Thread *)readyList->SortedRemove(NULL);
+    while(t != NULL) {
+        tmplist->Append((void *)t);
+        t = (Thread *)readyList->SortedRemove(NULL);
+    }
+    t = (Thread *)tmplist->SortedRemove(NULL);
+    while(t != NULL) {
+        //printf("inserting %s with priority: %d\n", t->getName(), t->getPriority());
+        readyList->SortedInsert((void *)t, t->getPriority());
+        t = (Thread *)tmplist->SortedRemove(NULL);
+    }
+    t = (Thread *)readyList->SortedRemove(NULL);
+    //printf("Next thread:%s\n", t->getName());
+    return t;
 }
 
 //----------------------------------------------------------------------

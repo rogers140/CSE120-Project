@@ -57,8 +57,7 @@ List::List()
 
 List::~List()
 {
-    while (Remove() != NULL)
-        ;	 // delete all the list elements
+    while (Remove() != NULL);	 // delete all the list elements
 }
 
 //----------------------------------------------------------------------

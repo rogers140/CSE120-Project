@@ -107,6 +107,7 @@ Lock::Lock(char* debugName) {
      name = debugName;
      isHeld = 0;
      holder = NULL;
+     oldPriority = currentThread->getPriority();
 }
 Lock::~Lock() {
      ASSERT(holder==NULL);
@@ -114,21 +115,28 @@ Lock::~Lock() {
 }
 void Lock::Acquire() {
      if(holder!=NULL){
-         ASSERT(strcmp(holder,currentThread->getName())!=0);
+         ASSERT(strcmp(holder->getName(),currentThread->getName())!=0);
+         //acquire same lock twice is not allowed
      }
      IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
      while(isHeld){
          queue->SortedInsert((void *)currentThread, currentThread->getPriority());
+         holder->setPriority((-1) * (holder->getPriority() < currentThread->getPriority() ? 
+                            holder->getPriority() : currentThread->getPriority()));
+         //donate priority
+         //printf("donating %s to priority: %d\n", holder->getName(), holder->getPriority());
+         oldPriority = holder->getPriority();
          currentThread->Sleep();
      }
      isHeld = 1;
-     holder = currentThread->getName();
-     currentThread->setPriority((-1)*currentThread->getPriority()); // threads hold lock own the highest priority
+     holder = currentThread;
+     oldPriority = holder->getPriority();
      (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
 
 }
 void Lock::Release() {
-     ASSERT(holder!=NULL&&strcmp(holder,currentThread->getName())==0);
+     ASSERT(holder!=NULL&&strcmp(holder->getName(),currentThread->getName())==0);
+     //release the lock that is not held is illegal
      Thread *thread;
      IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
      thread = (Thread *)queue->SortedRemove(NULL);
@@ -136,10 +144,12 @@ void Lock::Release() {
          scheduler->ReadyToRun(thread);
      isHeld = 0;
      holder = NULL;
-     currentThread->setPriority((-1)*currentThread->getPriority());// threads release lock gain its normal priority
+     currentThread->setPriority((-1) *oldPriority);// threads release lock gain its normal priority     
      (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
 }
-
+bool Lock::isHeldByCurrentThread() {
+    return (strcmp(holder->getName(),currentThread->getName()) == 0);
+}
 
 Condition::Condition(char* debugName) { 
     name = debugName;
@@ -150,8 +160,11 @@ Condition::~Condition() {
     delete cvQueue;
 }
 void Condition::Wait(Lock* conditionLock) {
-    ASSERT(conditionLock->holder!=NULL&&strcmp(conditionLock->holder,currentThread->getName())==0);
+    ASSERT(conditionLock->holder!=NULL&&strcmp(conditionLock->holder->getName(),currentThread->getName())==0);
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
+
+    //printf("wait priority:%d\n", currentThread->getPriority());
+
     cvQueue->SortedInsert((void *)currentThread, currentThread->getPriority());
     conditionLock->Release();
     currentThread->Sleep();
@@ -163,6 +176,7 @@ void Condition::Wait(Lock* conditionLock) {
 void Condition::Signal(Lock* conditionLock) { 
     Thread *thread;
     thread=(Thread*)cvQueue->SortedRemove(NULL);
+    //printf("signaled priority:%s\n", thread->getPriority());
     if(thread!=NULL){
         scheduler->ReadyToRun(thread);
     }

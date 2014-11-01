@@ -114,17 +114,14 @@ public:
         printf("%s, ", name);
     }
     // set priority of a thread
-    void setPriority(int newPriority){   // set the priority of the thread
-        Priority=newPriority;
-    }
+    void setPriority(int newPriority);   // set the priority of the thread
+  
     // get priority of a thread
-    int getPriority(){                // get the priority of the thread
-        return (Priority);
-    }
+    int getPriority();                // get the priority of the thread
+ 
     void Join();                      // join the thread
-    Thread* getJThread(){             // get the joined child thread of parent thread
-        return (jThread);
-    };
+    Thread* getJThread();             // get the joined child thread of parent thread
+ 
 private:
     // some of the private data for this class is listed above
     

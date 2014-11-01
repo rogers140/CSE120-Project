@@ -80,14 +80,12 @@ public:
     // holds this lock.  Useful for
     // checking in Release, and in
     // Condition variable ops below.
-
-    char* holder;                       // holder of the lock
-
+    Thread* holder;                       // holder of the lock
 private:
     char* name;				// for debugging
     List *queue;                        // list for thread
     int isHeld;                         // if is held by thread
-    //char* holder;                       // holder of the lock
+    int oldPriority;
     // plus some other stuff you'll need to define
 };
 

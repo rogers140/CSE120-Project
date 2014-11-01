@@ -104,6 +104,20 @@ Thread::~Thread()
 //	"func" is the procedure to run concurrently.
 //	"arg" is a single argument to be passed to the procedure.
 //----------------------------------------------------------------------
+int 
+Thread::getPriority(){                // get the priority of the thread
+    return (Priority);
+}
+
+void 
+Thread::setPriority(int newPriority){   // set the priority of the thread
+    Priority=newPriority*(-1);
+}
+
+Thread* 
+Thread::getJThread(){             // get the joined child thread of parent thread
+    return (jThread);
+}
 
 void
 Thread::Fork(VoidFunctionPtr func, int arg)
@@ -175,19 +189,22 @@ Thread::Join()
     ASSERT(joinCalled==0);    //ASSERT join() has not been called
     ASSERT(canJoin==1)        //ASSERT this thread can be joined
     Thread* tmp = currentThread->getJThread();  // get the joined child thread of the parent thread
-    tmp->setPriority(currentThread->getPriority()); // set the priority of the child thread
-    //printf("tmp1 %s pri is %d\n",tmp->getName(),tmp->getPriority());
+    tmp->setPriority(-1*currentThread->getPriority()); // set the priority of the child thread
+    //
     if(tmp!=NULL){
         ASSERT(strcmp(tmp->getName(),currentThread->getName())!=0);    //ASSERT the thread does not join itself
 
     }
     //printf("tmp2 %s pri is %d\n",tmp->getName(),tmp->getPriority());
     joinCalled=1;             // join() is now called
+    //printf("Join is called.\n");
+
     joinLock->Acquire();
     while(done==0){           // if child thread has not finished block parent, otherwise do not block parent
         // printf("wait!%s\n",currentThread->getName());   //used for debug
         joinCondition->Wait(joinLock);
     }
+    //printf("currentThread prioriy is %d\n",currentThread->getPriority());
     joinLock->Release();
 }
 
@@ -207,7 +224,7 @@ Thread::Finish ()
     }
     else{         // child thread finish
         while(joinCalled==0){   //if child has not joined parent and finishes it should not be deleted
-
+            currentThread->Yield();
         }
 
         (void) interrupt->SetLevel(IntOff);
@@ -255,12 +272,13 @@ Thread::Yield ()
     ASSERT(this == currentThread);
 
     DEBUG('t', "Yielding thread \"%s\"\n", getName());
-
-    nextThread = scheduler->FindNextToRun();
-    if (nextThread != NULL) {
-        scheduler->ReadyToRun(this);
+    scheduler->ReadyToRun(this);             //move this line forward so that
+    nextThread = scheduler->FindNextToRun(); //priority no inversion
+    if (nextThread != NULL) {      
         scheduler->Run(nextThread);
     }
+    
+    
     (void) interrupt->SetLevel(oldLevel);
 }
 
