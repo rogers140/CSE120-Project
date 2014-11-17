@@ -107,15 +107,17 @@ Lock::Lock(char* debugName) {
      name = debugName;
      isHeld = 0;
      holder = NULL;
-     oldPriority = currentThread->getPriority();
+     //oldPriority = currentThread->getPriority();
 }
 Lock::~Lock() {
      ASSERT(holder==NULL);
      ASSERT(queue->IsEmpty());
+     delete queue;
 }
 void Lock::Acquire() {
+     oldPriority = currentThread->getPriority();
      if(holder!=NULL){
-         ASSERT(strcmp(holder->getName(),currentThread->getName())!=0);
+         ASSERT(holder == currentThread);
          //acquire same lock twice is not allowed
      }
      IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
@@ -135,7 +137,7 @@ void Lock::Acquire() {
 
 }
 void Lock::Release() {
-     ASSERT(holder!=NULL&&strcmp(holder->getName(),currentThread->getName())==0);
+     ASSERT(holder!=NULL&&(holder == currentThread));
      //release the lock that is not held is illegal
      Thread *thread;
      IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
@@ -148,7 +150,7 @@ void Lock::Release() {
      (void) interrupt->SetLevel(oldLevel);	// re-enable interrupts
 }
 bool Lock::isHeldByCurrentThread() {
-    return (strcmp(holder->getName(),currentThread->getName()) == 0);
+    return (holder == currentThread);
 }
 
 Condition::Condition(char* debugName) { 
@@ -160,7 +162,7 @@ Condition::~Condition() {
     delete cvQueue;
 }
 void Condition::Wait(Lock* conditionLock) {
-    ASSERT(conditionLock->holder!=NULL&&strcmp(conditionLock->holder->getName(),currentThread->getName())==0);
+    ASSERT(conditionLock->holder!=NULL&&(conditionLock->holder == currentThread));
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
 
     //printf("wait priority:%d\n", currentThread->getPriority());
@@ -174,21 +176,26 @@ void Condition::Wait(Lock* conditionLock) {
 
 }
 void Condition::Signal(Lock* conditionLock) { 
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
     Thread *thread;
+    ASSERT(conditionLock->holder == currentThread);
     thread=(Thread*)cvQueue->SortedRemove(NULL);
     //printf("signaled priority:%s\n", thread->getPriority());
     if(thread!=NULL){
         scheduler->ReadyToRun(thread);
     }
+    (void)interrupt->SetLevel(oldLevel);
 
 }
-void Condition::Broadcast(Lock* conditionLock) { 
+void Condition::Broadcast(Lock* conditionLock) {
+    IntStatus oldLevel = interrupt->SetLevel(IntOff); 
     Thread *thread;
+    ASSERT(conditionLock->holder == currentThread);
     while(!cvQueue->IsEmpty()){
         thread=(Thread*)cvQueue->Remove();
         scheduler->ReadyToRun(thread);
-        
     }
+    (void)interrupt->SetLevel(oldLevel);
 
 }
 //mailbox
@@ -244,50 +251,45 @@ Whale::Whale(char* debugName) {
 void Whale::Male() {
     lock->Acquire();
     ++maleNum;
-    if(femaleNum > 0 && matcherNum > 0) {
-        --femaleNum;
-        --matcherNum;
-        --maleNum;
-        femaleCond->Signal(lock);
-        matcherCond->Signal(lock);
-        printf("Matched!\n");
-    }
-    else {
+    while(femaleNum == 0 || matcherNum == 0) {
         maleCond->Wait(lock);
-    }
+    } 
+    --femaleNum;
+    --matcherNum;
+    --maleNum;
+    femaleCond->Signal(lock);
+    matcherCond->Signal(lock);
+    printf("Matched!\n");
+
     lock->Release();
 }
 void Whale::Female() {
     lock->Acquire();
     ++femaleNum;
-    if(maleNum > 0 && matcherNum > 0) {
-        --maleNum;
-        --matcherNum;
-        --femaleNum;
-        maleCond->Signal(lock);
-        matcherCond->Signal(lock);
-        printf("Matched!\n");
-    }
-    else {
+    while(maleNum == 0 || matcherNum == 0) {
         femaleCond->Wait(lock);
-    }
+    }   
+    --maleNum;
+    --matcherNum;
+    --femaleNum;
+    maleCond->Signal(lock);
+    matcherCond->Signal(lock);
+    printf("Matched!\n");
     lock->Release();
 
 }
 void Whale::Matchmaker() {
     lock->Acquire();
     ++matcherNum;
-    if(femaleNum > 0 && maleNum > 0) {
-        --femaleNum;
-        --maleNum;
-        --matcherNum;
-        femaleCond->Signal(lock);
-        maleCond->Signal(lock);
-        printf("Matched!\n");
-    }
-    else {
+    while(femaleNum == 0 || maleNum == 0) {
         matcherCond->Wait(lock);
-    }
+    }        
+    --femaleNum;
+    --maleNum;
+    --matcherNum;
+    femaleCond->Signal(lock);
+    maleCond->Signal(lock);
+    printf("Matched!\n");
     lock->Release();
 
 }

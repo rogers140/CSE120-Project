@@ -39,6 +39,7 @@ Thread::Thread(char* threadName)
     stack = NULL;
     status = JUST_CREATED;
     canJoin = 0;
+    isJoined = 0;
     Priority= 0;
 #ifdef USER_PROGRAM
     space = NULL;
@@ -54,7 +55,8 @@ Thread::Thread(char* debugName,int join)
     joinCondition= new Condition("jCV");
     Priority=0;
     jThread=NULL;
-    joinCalled=0;   
+    joinCalled=0;
+    isJoined = 0;   
     forkCalled=0;
     done = 0;
     canJoin = join;
@@ -81,6 +83,7 @@ Thread::~Thread()
     DEBUG('t', "Deleting thread \"%s\"\n", name);
 
     ASSERT(this != currentThread);
+    ASSERT(canJoin == 1 | isJoined == 0);
     if (stack != NULL)
         DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
 }
@@ -132,7 +135,6 @@ Thread::Fork(VoidFunctionPtr func, int arg)
           name, (int) func, arg);
 
     StackAllocate(func, arg);
-
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
     
     scheduler->ReadyToRun(this);	// ReadyToRun assumes that interrupts
@@ -189,15 +191,11 @@ Thread::Join()
     ASSERT(joinCalled==0);    //ASSERT join() has not been called
     ASSERT(canJoin==1)        //ASSERT this thread can be joined
     Thread* tmp = currentThread->getJThread();  // get the joined child thread of the parent thread
+    ASSERT(tmp == currentThread);    //ASSERT the thread does not join itself
+    tmp->isJoined = 1;
     if(tmp->getPriority() > currentThread->getPriority()) {
         tmp->setPriority(-1*currentThread->getPriority()); // Magic!! don't touch
         //but acutally it's because set will reverse the value, so we need a positive input.
-    }
-    
-    //
-    if(tmp!=NULL){
-        ASSERT(strcmp(tmp->getName(),currentThread->getName())!=0);    //ASSERT the thread does not join itself
-
     }
     //printf("tmp2 %s pri is %d\n",tmp->getName(),tmp->getPriority());
     joinCalled=1;             // join() is now called

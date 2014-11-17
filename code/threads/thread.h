@@ -132,6 +132,7 @@ private:
     char* name;                 // debug name of the thread
     int Priority;               // prioruty of the thread
     int canJoin;                // flag that whether a thread can be joined  
+    int isJoined;               // flag of this thread is been joined
     int done;                   // finish flag of a thread
     Lock* joinLock;             // Lock of a thread
     Condition* joinCondition;   // Condition of a thread
