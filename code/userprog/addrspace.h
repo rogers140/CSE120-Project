@@ -15,9 +15,8 @@
 
 #include "copyright.h"
 #include "filesys.h"
-#include "memorymanager.h"
 #include "machine.h"
-
+class MemoryManager;
 #define UserStackSize		1024 	// increase this as necessary!
 
 class AddrSpace {

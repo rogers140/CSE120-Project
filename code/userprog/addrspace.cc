@@ -17,6 +17,7 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "memorymanager.h"
 #include "addrspace.h"
 #include "noff.h"
 #ifdef HOST_SPARC

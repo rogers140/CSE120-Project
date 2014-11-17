@@ -3,7 +3,7 @@
 
 #include "copyright.h"
 #include "bitmap.h"
-class Lock;
+#include "synch.h"
 class MemoryManager{
 public:
 
