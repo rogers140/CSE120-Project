@@ -30,6 +30,7 @@
 //	endian machine, and we're now running on a big endian machine.
 //----------------------------------------------------------------------
 
+
 static void
 SwapHeader (NoffHeader *noffH)
 {
@@ -60,11 +61,29 @@ SwapHeader (NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
-AddrSpace::AddrSpace(OpenFile *executable)
+AddrSpace::AddrSpace()
+{
+    memManager = new MemoryManager(NumPhysPages);
+}
+
+
+//----------------------------------------------------------------------
+// AddrSpace::~AddrSpace
+// 	Dealloate an address space.  Nothing for now!
+//----------------------------------------------------------------------
+
+AddrSpace::~AddrSpace()
+{
+    delete [] pageTable;
+}
+
+void
+AddrSpace::Initialize(OpenFile *executable)
 {
     NoffHeader noffH;
     unsigned int i, size;
-
+    unsigned int currentCodeSize,currentCodePosition;
+    unsigned int currentDataSize,currentDataPosition;
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) &&
             (WordToHost(noffH.noffMagic) == NOFFMAGIC))
@@ -73,12 +92,13 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 // how big is address space?
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size
-           + UserStackSize;	// we need to increase the size
+           + UserStackSize; // we need to increase the size
     // to leave room for the stack
     numPages = divRoundUp(size, PageSize);
     size = numPages * PageSize;
 
-    ASSERT(numPages <= NumPhysPages);		// check we're not trying
+
+    ASSERT(numPages <= NumPhysPages);       // check we're not trying
     // to run anything too big --
     // at least until we have
     // virtual memory
@@ -88,8 +108,8 @@ AddrSpace::AddrSpace(OpenFile *executable)
 // first, set up the translation
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
-        pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-        pageTable[i].physicalPage = i;
+        pageTable[i].virtualPage = i;   // for now, virtual page # = phys page #
+        pageTable[i].physicalPage = memManager->AllocPage();
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -100,32 +120,69 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 // zero out the entire address space, to zero the unitialized data segment
 // and the stack segment
-    bzero(machine->mainMemory, size);
+    //bzero(machine->mainMemory, size);
+    for(i=0; i < numPages; i++)
+    {
+        int physPage = pageTable[i].physicalPage;
+                
+    }
 
 // then, copy in the code and data segments into memory
-    if (noffH.code.size > 0) {
-        DEBUG('a', "Initializing code segment, at 0x%x, size %d\n",
-              noffH.code.virtualAddr, noffH.code.size);
-        executable->ReadAt(&(machine->mainMemory[noffH.code.virtualAddr]),
-                           noffH.code.size, noffH.code.inFileAddr);
-    }
-    if (noffH.initData.size > 0) {
-        DEBUG('a', "Initializing data segment, at 0x%x, size %d\n",
-              noffH.initData.virtualAddr, noffH.initData.size);
-        executable->ReadAt(&(machine->mainMemory[noffH.initData.virtualAddr]),
-                           noffH.initData.size, noffH.initData.inFileAddr);
+
+
+    currentCodeSize = noffH.code.size;
+    currentDataSize = noffH.initData.size;
+    currentCodePosition = noffH.code.inFileAddr;
+    currentDataPosition = noffH.initData.inFileAddr;
+    int currentVP=0;
+    if(noffH.code.size > 0){
+    while (currentCodeSize >0) 
+    {
+        if(currentCodeSize < PageSize)
+        {
+            executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
+                               currentCodeSize, currentCodePosition); 
+            currentCodeSize-=PageSize;
+        }
+        else
+        {
+        executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
+                           PageSize, currentCodePosition);
+        currentVP++;
+        currentCodePosition+=PageSize;
+        currentCodeSize-=PageSize;
+        }
+    }    
+
+    int codeRemain, dataFilled;
+    codeRemain = PageSize + currentCodeSize;
+    dataFilled = -currentCodeSize;
+    executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize + codeRemain]),
+                       dataFilled, currentDataPosition);
+    currentVP++;
+    currentDataPosition+=dataFilled;
+    currentDataSize-=dataFilled;
     }
 
+    if(noffH.initData.size > 0){
+    while (currentDataSize >0) 
+    {
+        if(currentDataSize < PageSize)
+        {
+            executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
+                               currentDataSize, currentDataPosition); 
+        currentDataSize-=PageSize;
+    }
+        else
+        {
+            executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
+                               PageSize, currentDataPosition);
+            currentVP++;
+            currentDataPosition+=PageSize;
+            currentDataSize-=PageSize;
+        }
+    }
 }
-
-//----------------------------------------------------------------------
-// AddrSpace::~AddrSpace
-// 	Dealloate an address space.  Nothing for now!
-//----------------------------------------------------------------------
-
-AddrSpace::~AddrSpace()
-{
-    delete [] pageTable;
 }
 
 //----------------------------------------------------------------------
@@ -169,7 +226,9 @@ AddrSpace::InitRegisters()
 //----------------------------------------------------------------------
 
 void AddrSpace::SaveState()
-{}
+{
+
+}
 
 //----------------------------------------------------------------------
 // AddrSpace::RestoreState
@@ -184,3 +243,11 @@ void AddrSpace::RestoreState()
     machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
 }
+//void AddrSpace::ReleasePages()
+//{
+//    for(int i = 0; i < numPages; i++)
+//    {
+//
+//    }
+
+
