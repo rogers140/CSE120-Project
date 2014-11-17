@@ -83,7 +83,7 @@ Thread::~Thread()
     DEBUG('t', "Deleting thread \"%s\"\n", name);
 
     ASSERT(this != currentThread);
-    ASSERT(canJoin == 1 | isJoined == 0);
+    ASSERT(canJoin == 1 || isJoined == 0);
     if (stack != NULL)
         DeallocBoundedArray((char *) stack, StackSize * sizeof(int));
 }
