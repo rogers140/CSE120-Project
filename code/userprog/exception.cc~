@@ -57,7 +57,7 @@ ExceptionHandler(ExceptionType which)
         DEBUG('a', "Shutdown, initiated by user program.\n");
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
-    	int arg1 = machine->ReadRegister(4); //read the arg of exit
+    	int arg1 = machine->ReadRegister(4);
         Exit(arg1);
     }
      else {
