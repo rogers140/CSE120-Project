@@ -62,9 +62,9 @@ SwapHeader (NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
-AddrSpace::AddrSpace()
+AddrSpace::AddrSpace(MemoryManager* TheMemoryManager)
 {
-    memManager = new MemoryManager(NumPhysPages);
+    memManager = TheMemoryManager;
 }
 
 
@@ -83,8 +83,7 @@ AddrSpace::Initialize(OpenFile *executable)
 {
     NoffHeader noffH;
     unsigned int i, size;
-    unsigned int currentCodeSize,currentCodePosition;
-    unsigned int currentDataSize,currentDataPosition;
+
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) &&
             (WordToHost(noffH.noffMagic) == NOFFMAGIC))
@@ -104,6 +103,8 @@ AddrSpace::Initialize(OpenFile *executable)
     // at least until we have
     // virtual memory
 
+    ASSERT(numPages <= (memManager->NumFreePage()));
+
     DEBUG('a', "Initializing address space, num pages %d, size %d\n",
           numPages, size);
 // first, set up the translation
@@ -119,71 +120,116 @@ AddrSpace::Initialize(OpenFile *executable)
         // pages to be read-only
     }
 
-// zero out the entire address space, to zero the unitialized data segment
+// zero out the entire address space page by page, to zero the unitialized data segment
 // and the stack segment
-    //bzero(machine->mainMemory, size);
+    
     for(i=0; i < numPages; i++)
     {
         int physPage = pageTable[i].physicalPage;
-                
+        bzero(&machine->mainMemory[physPage*PageSize], PageSize);
     }
 
 // then, copy in the code and data segments into memory
 
+   
+    int currentCodeSize = noffH.code.size;
+    int currentDataSize = noffH.initData.size;
+    int currentCodePosition = noffH.code.inFileAddr;
+    int currentDataPosition = noffH.initData.inFileAddr;
+    int currentCodeVirtualAddr=noffH.code.virtualAddr;
+    int currentDataVirtualAddr=noffH.initData.virtualAddr;
+    
 
-    currentCodeSize = noffH.code.size;
-    currentDataSize = noffH.initData.size;
-    currentCodePosition = noffH.code.inFileAddr;
-    currentDataPosition = noffH.initData.inFileAddr;
-    int currentVP=0;
-    if(noffH.code.size > 0){
-    while (currentCodeSize >0) 
+    if(noffH.code.size > 0)
     {
-        if(currentCodeSize < PageSize)
-        {
-            executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
-                               currentCodeSize, currentCodePosition); 
-            currentCodeSize-=PageSize;
-        }
-        else
-        {
-        executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
-                           PageSize, currentCodePosition);
-        currentVP++;
-        currentCodePosition+=PageSize;
-        currentCodeSize-=PageSize;
-        }
-    }    
 
-    int codeRemain, dataFilled;
-    codeRemain = PageSize + currentCodeSize;
-    dataFilled = -currentCodeSize;
-    executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize + codeRemain]),
-                       dataFilled, currentDataPosition);
-    currentVP++;
-    currentDataPosition+=dataFilled;
-    currentDataSize-=dataFilled;
+        if(TransPhyOffset(currentCodeVirtualAddr)!=0&&
+           (currentCodeSize+TransPhyOffset(currentCodeVirtualAddr))<PageSize)
+        {
+            executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
+                               currentCodeSize, currentCodePosition);
+            currentCodeSize=0;
+        } 
+
+        if(TransPhyOffset(currentCodeVirtualAddr)!=0&&
+           (currentCodeSize+TransPhyOffset(currentCodeVirtualAddr))>=PageSize)
+        {
+            executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
+                               (PageSize-TransPhyOffset(currentCodeVirtualAddr)), currentCodePosition); 
+            currentCodeSize-=(PageSize-TransPhyOffset(currentCodeVirtualAddr));
+            currentCodePosition+=(PageSize-TransPhyOffset(currentCodeVirtualAddr));
+            currentCodeVirtualAddr+=(PageSize-TransPhyOffset(currentCodeVirtualAddr));
+        }
+
+        while (currentCodeSize >0) 
+        {
+            if(currentCodeSize < PageSize)
+            {
+
+                executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
+                                   currentCodeSize, currentCodePosition); 
+                currentCodeSize-=PageSize;
+            }
+            else
+            {
+                executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
+                                    PageSize, currentCodePosition);
+        
+                currentCodeSize-=PageSize;
+                currentCodePosition+=PageSize;
+                currentCodeVirtualAddr+=PageSize;
+            }
+        }       
+
     }
 
-    if(noffH.initData.size > 0){
-    while (currentDataSize >0) 
+    if(noffH.initData.size > 0)
     {
-        if(currentDataSize < PageSize)
+  
+        if(TransPhyOffset(currentDataVirtualAddr)!=0&&currentDataSize<PageSize)
         {
-            executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
-                               currentDataSize, currentDataPosition); 
-        currentDataSize-=PageSize;
-    }
-        else
+
+            executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
+                                currentDataSize, currentDataPosition);
+            currentDataSize=0;
+        } 
+
+        if(TransPhyOffset(currentDataVirtualAddr)!=0&&currentDataSize>=PageSize)
         {
-            executable->ReadAt(&(machine->mainMemory[(pageTable[currentVP].physicalPage)*PageSize]),
-                               PageSize, currentDataPosition);
-            currentVP++;
-            currentDataPosition+=PageSize;
-            currentDataSize-=PageSize;
+
+            executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
+                               (PageSize-TransPhyOffset(currentDataVirtualAddr)), currentDataPosition); 
+            currentDataSize-=(PageSize-TransPhyOffset(currentDataVirtualAddr));
+            currentDataPosition+=(PageSize-TransPhyOffset(currentDataVirtualAddr));
+            currentDataVirtualAddr+=(PageSize-TransPhyOffset(currentDataVirtualAddr));
+        
         }
+
+        while (currentDataSize >0) 
+        {
+
+            if(currentDataSize < PageSize)
+            {
+
+                executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
+                                   currentDataSize, currentDataPosition); 
+                currentDataSize-=PageSize;
+            }
+            else
+            {
+
+                executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
+                                   PageSize, currentDataPosition);
+        
+                currentDataSize-=PageSize;
+                currentDataPosition+=PageSize;
+                currentDataVirtualAddr+=PageSize;
+            }
+
+        }    
+
     }
-}
+
 }
 
 //----------------------------------------------------------------------
@@ -251,4 +297,35 @@ void AddrSpace::RestoreState()
 //
 //    }
 
+unsigned int AddrSpace::TransPhyAddr(unsigned int virtAddr)
+{
+    unsigned int vpn, offset, physAddr;
+    TranslationEntry *entry;
+    unsigned int pageFrame;
 
+    vpn = (unsigned) virtAddr / PageSize;
+    offset = (unsigned) virtAddr % PageSize;
+    entry = &pageTable[vpn];
+    pageFrame = entry->physicalPage;
+    physAddr = pageFrame * PageSize + offset;
+    return physAddr;
+}
+
+unsigned int AddrSpace::TransPhyOffset(unsigned int virtAddr)
+{
+    unsigned int offset;
+    offset = (unsigned) virtAddr % PageSize;
+    return offset;
+}
+
+unsigned int AddrSpace::TransPhyNumpage(unsigned int virtAddr) 
+{
+    unsigned int vpn;
+    TranslationEntry *entry;
+    unsigned int pageFrame;
+
+    vpn = (unsigned) virtAddr / PageSize;
+    entry = &pageTable[vpn];
+    pageFrame = entry->physicalPage;
+    return pageFrame;
+}

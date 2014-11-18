@@ -435,6 +435,7 @@ Abort()
 void
 Exit(int exitCode)
 {
+    printf("I am going to exit %d\n",exitCode);
     exit(exitCode);
 }
 

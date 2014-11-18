@@ -3,7 +3,7 @@
 #include "memorymanager.h"
 
 //MemoryMananger::memorymanager
-MemoryManager::MemoryManager(int numPages)
+MemoryManager::MemoryManager(unsigned int numPages)
 {
 	bitMap = new BitMap(numPages);
 	safeLock = new Lock("safeLock");
@@ -17,7 +17,7 @@ MemoryManager::~MemoryManager()
 int MemoryManager::AllocPage()
 {
 	safeLock->Acquire();
-	if((bitMap->NumClear) <1)
+	if((bitMap->NumClear()) <1)
 	{
 		safeLock->Release();
 		return -1;
@@ -38,11 +38,18 @@ void MemoryManager::FreePage(int physPageNum)
 bool MemoryManager::PageIsAllocated(int physPageNum)
 {
 	safeLock->Acquire();
-	if(bitMap->Test(physPageNum)
+	if(bitMap->Test(physPageNum))
+	{
 		safeLock->Release();
 		return TRUE;
-	else
+	}
+	else{
 		safeLock->Release();
 		return FALSE;
+	}
 }
+
+unsigned int MemoryManager::NumFreePage()
+{
+	return bitMap->NumClear();	
 }

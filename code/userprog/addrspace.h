@@ -16,14 +16,13 @@
 #include "copyright.h"
 #include "filesys.h"
 #include "machine.h"
+
 class MemoryManager;
 #define UserStackSize		1024 	// increase this as necessary!
 
 class AddrSpace {
 public:
-    AddrSpace();	// Create an address space,
-    // initializing it with the program
-    // stored in the file "executable"
+    AddrSpace(MemoryManager* TheMemoryManager);	// Create an address space,
     ~AddrSpace();			// De-allocate an address space
 
     void InitRegisters();		// Initialize user-level CPU registers,
@@ -31,7 +30,11 @@ public:
 
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch
-    void Initialize(OpenFile *executable);
+    void Initialize(OpenFile *executable);   // initializing it with the program
+                                             // stored in the file "executable"  
+    unsigned int TransPhyAddr(unsigned int virtAddr); //translate virtual address to physical address
+    unsigned int TransPhyOffset(unsigned int virtAddr); //get physical offset
+    unsigned int TransPhyNumpage(unsigned int virtAddr);//get physical number of page 
 private:
     TranslationEntry *pageTable;	// Assume linear page table translation
     // for now!
