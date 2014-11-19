@@ -56,6 +56,7 @@ void
 ExceptionHandler(ExceptionType which)
 {
     int type = machine->ReadRegister(2);
+    
 
     if ((which == SyscallException) && (type == SC_Halt)) {
         DEBUG('a', "Shutdown, initiated by user program.\n");
@@ -70,22 +71,29 @@ ExceptionHandler(ExceptionType which)
         //int arg3 = machine->ReadRegister(6); //read the arg of exit
         //int arg4 = machine->ReadRegister(7); //read the arg of exit
         Thread* t = new Thread("new");
+        machine->WriteRegister(8,1);
         t ->Fork((VoidFunctionPtr)ProcessStart,arg1);
+        machine->WriteRegister(8,2);
         currentThread->Yield();
     }
      else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
     }
+    
 }
 
 
 void
 ProcessStart(char *filename)
 {
+    machine->WriteRegister(8,1);
     OpenFile *executable = fileSystem->Open("../test/exittest");
+    machine->WriteRegister(8,2);
     AddrSpace *space;
+    machine->WriteRegister(8,3);
     MemoryManager *TheMemoryManager;
+    machine->WriteRegister(8,4);
     ASSERT(executable != NULL);
     if (executable == NULL) {
         printf("Unable to open file %s\n", filename);
@@ -98,13 +106,27 @@ ProcessStart(char *filename)
 
     delete executable;          // close file
 
-    space->InitRegisters();     // set the initial register values
-    space->RestoreState();      // load page table register
+    //space->InitRegisters();     // set the initial register values
+    //space->RestoreState();      // load page table register
 
-   //machine->WriteRegister(2,(int)space);
+    machine->WriteRegister(2,(int)space);
 
+    int pc; 
+    machine->WriteRegister(8,255);
+    pc=machine->ReadRegister(PCReg); 
+    machine->WriteRegister(8,254);
+    machine->WriteRegister(PrevPCReg,pc); 
+    machine->WriteRegister(8,253);
+    pc=machine->ReadRegister(NextPCReg); 
+    machine->WriteRegister(8,252);
+    machine->WriteRegister(PCReg,pc); 
+    machine->WriteRegister(8,251);
+    pc += 4; 
+    machine->WriteRegister(8,250);
+    machine->WriteRegister(NextPCReg,pc); 
     machine->Run();         // jump to the user progam
-    ASSERT(FALSE);          // machine->Run never returns;
+
+    //ASSERT(FALSE);          // machine->Run never returns;
     // the address space exits
     // by doing the syscall "exit"
 }
