@@ -23,6 +23,10 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "console.h"
+#include "addrspace.h"
+#include "synch.h"
+#include "memorymanager.h"
 #include "syscall.h"
 
 //----------------------------------------------------------------------
@@ -47,7 +51,7 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	are in machine.h.
 //----------------------------------------------------------------------
-
+void ProcessStart(char *filename);
 void
 ExceptionHandler(ExceptionType which)
 {
@@ -60,8 +64,47 @@ ExceptionHandler(ExceptionType which)
     	int arg1 = machine->ReadRegister(4); //read the arg of exit
         Exit(arg1);
     }
+    else if ((which == SyscallException) && (type == SC_Exec)) {
+        int arg1 = machine->ReadRegister(4); //read the arg of exit
+        //int arg2 = machine->ReadRegister(5); //read the arg of exit
+        //int arg3 = machine->ReadRegister(6); //read the arg of exit
+        //int arg4 = machine->ReadRegister(7); //read the arg of exit
+        Thread* t = new Thread("new");
+        t ->Fork((VoidFunctionPtr)ProcessStart,arg1);
+        currentThread->Yield();
+    }
      else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
     }
+}
+
+
+void
+ProcessStart(char *filename)
+{
+    OpenFile *executable = fileSystem->Open("../test/exittest");
+    AddrSpace *space;
+    MemoryManager *TheMemoryManager;
+    ASSERT(executable != NULL);
+    if (executable == NULL) {
+        printf("Unable to open file %s\n", filename);
+        return;
+    }
+    TheMemoryManager = new MemoryManager(NumPhysPages);
+    space = new AddrSpace(TheMemoryManager);
+    space->Initialize(executable);
+    currentThread->space = space;
+
+    delete executable;          // close file
+
+    space->InitRegisters();     // set the initial register values
+    space->RestoreState();      // load page table register
+
+   //machine->WriteRegister(2,(int)space);
+
+    machine->Run();         // jump to the user progam
+    ASSERT(FALSE);          // machine->Run never returns;
+    // the address space exits
+    // by doing the syscall "exit"
 }

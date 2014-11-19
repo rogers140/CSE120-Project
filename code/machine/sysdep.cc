@@ -25,6 +25,7 @@
 
 #include "copyright.h"
 
+
 extern "C" {
 #include <stdio.h>
 #include <string.h>
@@ -439,6 +440,7 @@ Exit(int exitCode)
     exit(exitCode);
 }
 
+
 //----------------------------------------------------------------------
 // RandomInit
 // 	Initialize the pseudo-random number generator.  We use the
@@ -502,3 +504,5 @@ DeallocBoundedArray(char *ptr, int size)
     mprotect(ptr + size, pgSize, PROT_READ | PROT_WRITE | PROT_EXEC);
     delete [] (ptr - pgSize);
 }
+
+

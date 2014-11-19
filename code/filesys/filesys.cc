@@ -234,6 +234,9 @@ FileSystem::Open(char *name)
     DEBUG('f', "Opening file %s\n", name);
     directory->FetchFrom(directoryFile);
     sector = directory->Find(name);
+    //test
+    //ASSERT(sector == 0);
+    //test
     if (sector >= 0)
         openFile = new OpenFile(sector);	// name was found in directory
     delete directory;
