@@ -31,7 +31,7 @@ public:
     void RestoreState();		// info on a context switch
     void Initialize(OpenFile *executable);   // initializing it with the program
                                              // stored in the file "executable"  
-    unsigned int TransPhyAddr(unsigned int virtAddr); //translate virtual address to physical address
+    int TransPhyAddr(unsigned int virtAddr); //translate virtual address to physical address
     unsigned int TransPhyOffset(unsigned int virtAddr); //get physical offset
     unsigned int TransPhyNumpage(unsigned int virtAddr);//get physical number of page 
 private:

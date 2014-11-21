@@ -302,7 +302,7 @@ void AddrSpace::RestoreState()
 //
 //    }
 
-unsigned int AddrSpace::TransPhyAddr(unsigned int virtAddr)
+int AddrSpace::TransPhyAddr(unsigned int virtAddr)
 {
     unsigned int vpn, offset, physAddr;
     TranslationEntry *entry;
@@ -310,6 +310,11 @@ unsigned int AddrSpace::TransPhyAddr(unsigned int virtAddr)
 
     vpn = (unsigned) virtAddr / PageSize;
     offset = (unsigned) virtAddr % PageSize;
+    if(vpn >= numPages) {
+        //error
+        DEBUG('a', "illegal virtual address: out of bound.\n");
+        return -1;
+    }
     entry = &pageTable[vpn];
     pageFrame = entry->physicalPage;
     physAddr = pageFrame * PageSize + offset;

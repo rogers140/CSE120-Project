@@ -16,7 +16,7 @@
 //
 // For now, this only handles the Halt() system call.
 // Everything else core dumps.
-//
+
 // Copyright (c) 1992-1993 The Regents of the University of California.
 // All rights reserved.  See copyright.h for copyright notice and limitation
 // of liability and disclaimer of warranty provisions.
@@ -68,21 +68,58 @@ ExceptionHandler(ExceptionType which)
         int arg1 = machine->ReadRegister(4); //read the arg of exit
 
         //reading filename
-        // char *filename = new char[100];//no longer than 100
-        // int index = 0;
-        // unsigned int phyAddr = (currentThread->space)->TransPhyAddr(arg1);
-        // DEBUG('a', "file name VA:0x%.2x\n", arg1);
-        // DEBUG('a', "file name PA:0x%.2x\n", phyAddr);
-        // char *c = NULL;
-        // bool success = machine->ReadMem(phyAddr, 2, (int *)c);
-        // DEBUG('a', "successfully read? %d\n", success);
-        // DEBUG('a', "charactor is :%c\n", *c);
+        const int maxLength = 100;
+        char *filename = new char[maxLength];//no longer than 100
+        int index = 0;
+
+        int phyAddr = 0;
+        char c = '\0';
+        
+        while(1) {
+            phyAddr = (currentThread->space)->TransPhyAddr(arg1);
+            if(phyAddr == -1) {
+                //error
+                return;
+            }
+            c = (char) machine->mainMemory[phyAddr];
+            //DEBUG('a', "size of return value %d\n", sizeof(machine->mainMemory[phyAddr]));
+            // DEBUG('a',"Read char:%c\n", c);
+            if(index == maxLength - 1) {// exceed the max length
+                if(c != '\0') {
+                    //error
+                    DEBUG('a', "Too long file name.\n");
+                    machine->WriteRegister(2, 0);
+                    return;
+                }
+                else {
+                    filename[index] = '\0';
+                    break;
+                }
+            }
+            else if(c == '\0') {
+                filename[index] = '\0';
+                DEBUG('a', "string end.\n");
+                break;
+            }
+            else {
+                filename[index] = c;
+                arg1 = arg1 + 1;
+                index += 1;
+            }
+            
+        }
+        //DEBUG('a', "File name is: %s\n", filename);
         //
 
 
         Thread* t = new Thread("Exec");
-        OpenFile *executable = fileSystem->Open("../test/exittest");
-        ASSERT(executable != NULL);
+        OpenFile *executable = fileSystem->Open(filename);
+        if(executable == NULL) {
+            //error
+            DEBUG('a', "Can not open file.\n");
+            machine->WriteRegister(2, 0);
+            return;
+        }
 
         t->space = new AddrSpace();
         t->space->Initialize(executable);
