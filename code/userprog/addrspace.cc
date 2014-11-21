@@ -23,7 +23,7 @@
 #ifdef HOST_SPARC
 #include <strings.h>
 #endif
-
+extern MemoryManager *TheMemoryManager;
 //----------------------------------------------------------------------
 // SwapHeader
 // 	Do little endian to big endian conversion on the bytes in the
@@ -62,9 +62,8 @@ SwapHeader (NoffHeader *noffH)
 //	"executable" is the file containing the object code to load into memory
 //----------------------------------------------------------------------
 
-AddrSpace::AddrSpace(MemoryManager* TheMemoryManager)
+AddrSpace::AddrSpace()
 {
-    memManager = TheMemoryManager;
 }
 
 
@@ -103,7 +102,7 @@ AddrSpace::Initialize(OpenFile *executable)
     // at least until we have
     // virtual memory
 
-    ASSERT(numPages <= (memManager->NumFreePage()));
+    ASSERT(numPages <= (TheMemoryManager->NumFreePage()));
 
     DEBUG('a', "Initializing address space, num pages %d, size %d\n",
           numPages, size);
@@ -111,7 +110,7 @@ AddrSpace::Initialize(OpenFile *executable)
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
         pageTable[i].virtualPage = i;   // for now, virtual page # = phys page #
-        pageTable[i].physicalPage = memManager->AllocPage();
+        pageTable[i].physicalPage = TheMemoryManager->AllocPage();
         pageTable[i].valid = TRUE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -138,7 +137,8 @@ AddrSpace::Initialize(OpenFile *executable)
     int currentDataPosition = noffH.initData.inFileAddr;
     int currentCodeVirtualAddr=noffH.code.virtualAddr;
     int currentDataVirtualAddr=noffH.initData.virtualAddr;
-    
+    DEBUG('a', "code VA starts: 0x%.2x, size is: %d\n",currentCodeVirtualAddr, currentCodeSize); 
+    DEBUG('a', "data VA starts: 0x%.2x, size is: %d\n",currentDataVirtualAddr, currentDataSize);    
 
     if(noffH.code.size > 0)
     {

@@ -14,7 +14,7 @@
 #include "addrspace.h"
 #include "synch.h"
 #include "memorymanager.h"
-
+MemoryManager *TheMemoryManager;
 //----------------------------------------------------------------------
 // StartProcess
 // 	Run a user program.  Open the executable, load it into
@@ -26,14 +26,13 @@ StartProcess(char *filename)
 {
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
-    MemoryManager *TheMemoryManager;
-
+    
     if (executable == NULL) {
         printf("Unable to open file %s\n", filename);
         return;
     }
     TheMemoryManager = new MemoryManager(NumPhysPages);
-    space = new AddrSpace(TheMemoryManager);
+    space = new AddrSpace();
     space->Initialize(executable);
     currentThread->space = space;
 

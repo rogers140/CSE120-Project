@@ -437,10 +437,12 @@ void
 Exit(int exitCode)
 {
     printf("I am going to exit %d\n",exitCode);
-    exit(exitCode);
+    Thread *t = currentThread;
+    t->Finish();
+    delete t;
+    //exit(exitCode);
+
 }
-
-
 //----------------------------------------------------------------------
 // RandomInit
 // 	Initialize the pseudo-random number generator.  We use the

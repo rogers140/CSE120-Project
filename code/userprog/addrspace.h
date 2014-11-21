@@ -17,12 +17,11 @@
 #include "filesys.h"
 #include "machine.h"
 
-class MemoryManager;
 #define UserStackSize		1024 	// increase this as necessary!
 
 class AddrSpace {
 public:
-    AddrSpace(MemoryManager* TheMemoryManager);	// Create an address space,
+    AddrSpace();	// Create an address space,
     ~AddrSpace();			// De-allocate an address space
 
     void InitRegisters();		// Initialize user-level CPU registers,
@@ -39,8 +38,6 @@ private:
     TranslationEntry *pageTable;	// Assume linear page table translation
     // for now!
     unsigned int numPages;		// Number of pages in the virtual
-    // address space
-    MemoryManager* memManager;
 };
 
 #endif // ADDRSPACE_H

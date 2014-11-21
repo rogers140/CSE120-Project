@@ -25,7 +25,6 @@
 #include "system.h"
 #include "console.h"
 #include "addrspace.h"
-#include "synch.h"
 #include "memorymanager.h"
 #include "syscall.h"
 
@@ -67,14 +66,18 @@ ExceptionHandler(ExceptionType which)
     }
     else if ((which == SyscallException) && (type == SC_Exec)) {
         int arg1 = machine->ReadRegister(4); //read the arg of exit
-        //int arg2 = machine->ReadRegister(5); //read the arg of exit
-        //int arg3 = machine->ReadRegister(6); //read the arg of exit
-        //int arg4 = machine->ReadRegister(7); //read the arg of exit
+
         Thread* t = new Thread("new");
-        machine->WriteRegister(8,1);
-        t ->Fork((VoidFunctionPtr)ProcessStart,arg1);
-        machine->WriteRegister(8,2);
-        currentThread->Yield();
+        OpenFile *executable = fileSystem->Open("../test/exittest");
+        ASSERT(executable != NULL);
+        t->space = new AddrSpace();
+        t->space->Initialize(executable);
+        DEBUG('a', "Initialized\n");
+        delete executable;          // close file
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        t->Fork((VoidFunctionPtr)ProcessStart,arg1);
+        //currentThread->Yield();
     }
      else {
         printf("Unexpected user mode exception %d %d\n", which, type);
@@ -87,46 +90,8 @@ ExceptionHandler(ExceptionType which)
 void
 ProcessStart(char *filename)
 {
-    machine->WriteRegister(8,1);
-    OpenFile *executable = fileSystem->Open("../test/exittest");
-    machine->WriteRegister(8,2);
-    AddrSpace *space;
-    machine->WriteRegister(8,3);
-    MemoryManager *TheMemoryManager;
-    machine->WriteRegister(8,4);
-    ASSERT(executable != NULL);
-    if (executable == NULL) {
-        printf("Unable to open file %s\n", filename);
-        return;
-    }
-    TheMemoryManager = new MemoryManager(NumPhysPages);
-    space = new AddrSpace(TheMemoryManager);
-    space->Initialize(executable);
-    currentThread->space = space;
-
-    delete executable;          // close file
-
-    //space->InitRegisters();     // set the initial register values
-    //space->RestoreState();      // load page table register
-
-    machine->WriteRegister(2,(int)space);
-
-    int pc; 
-    machine->WriteRegister(8,255);
-    pc=machine->ReadRegister(PCReg); 
-    machine->WriteRegister(8,254);
-    machine->WriteRegister(PrevPCReg,pc); 
-    machine->WriteRegister(8,253);
-    pc=machine->ReadRegister(NextPCReg); 
-    machine->WriteRegister(8,252);
-    machine->WriteRegister(PCReg,pc); 
-    machine->WriteRegister(8,251);
-    pc += 4; 
-    machine->WriteRegister(8,250);
-    machine->WriteRegister(NextPCReg,pc); 
+    DEBUG('a', "enter child process\n");
+    currentThread->space->InitRegisters();     // set the initial register values
+    currentThread->space->RestoreState();      // load page table register
     machine->Run();         // jump to the user progam
-
-    //ASSERT(FALSE);          // machine->Run never returns;
-    // the address space exits
-    // by doing the syscall "exit"
 }
