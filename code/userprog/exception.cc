@@ -49,6 +49,7 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	are in machine.h.
 //----------------------------------------------------------------------
+void exit(int exitCode);
 void ProcessStart(char *filename);
 void
 ExceptionHandler(ExceptionType which)
@@ -61,51 +62,30 @@ ExceptionHandler(ExceptionType which)
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
     	int arg1 = machine->ReadRegister(4); //read the arg of exit
-        printf("I am going to exit %d\n",arg1);
-        Thread *t = currentThread;
-        delete t->space;
-        t->Finish();
+        exit(arg1);
     }
     else if ((which == SyscallException) && (type == SC_Exec)) {
         int arg1 = machine->ReadRegister(4); //read the arg of exit
 
-        Thread* t = new Thread("new");
-
+        //reading filename
         // char *filename = new char[100];//no longer than 100
         // int index = 0;
-        // while(1) {
-        //     unsigned int phyAddr = (currentThread->space)->TransPhyAddr(arg1);
-        //     DEBUG('c', "string start :%d\n", phyAddr);
-        //     char *c = NULL;
-        //     machine->ReadMem(phyAddr, 4, (int *)c);
-        //     DEBUG('c', "char is:%c\n", *c);
-        //     if(index == 99) {
-                
-        //         if(*c == '\0') {
-        //             break;
-        //         }
-        //         else {
-        //             //error, 
-        //         }
-        //     }
-        //     else {
-        //         filename[index] = *c;
-        //         if(*c == '\0') {
-        //             break;
-        //         }
-        //         else{
-        //             index += 1;
-        //         }
-        //     }
+        // unsigned int phyAddr = (currentThread->space)->TransPhyAddr(arg1);
+        // DEBUG('a', "file name VA:0x%.2x\n", arg1);
+        // DEBUG('a', "file name PA:0x%.2x\n", phyAddr);
+        // char *c = NULL;
+        // bool success = machine->ReadMem(phyAddr, 2, (int *)c);
+        // DEBUG('a', "successfully read? %d\n", success);
+        // DEBUG('a', "charactor is :%c\n", *c);
+        //
 
-        // }
 
+        Thread* t = new Thread("Exec");
         OpenFile *executable = fileSystem->Open("../test/exittest");
         ASSERT(executable != NULL);
 
         t->space = new AddrSpace();
         t->space->Initialize(executable);
-        DEBUG('a', "Initialized\n");
         delete executable;          // close file
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
@@ -119,7 +99,12 @@ ExceptionHandler(ExceptionType which)
     }
     
 }
-
+void exit(int exitCode) {
+    printf("I am going to exit %d\n",exitCode);
+    Thread *t = currentThread;
+    delete t->space;
+    t->Finish();
+}
 
 void
 ProcessStart(char *filename)
