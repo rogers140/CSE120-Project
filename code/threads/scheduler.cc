@@ -135,6 +135,7 @@ Scheduler::Run (Thread *nextThread)
     // before now (for example, in Thread::Finish()), because up to this
     // point, we were still running on the old thread's stack!
     if (threadToBeDestroyed != NULL) {
+        DEBUG('t', "Deleting thread \"%s\"\n", threadToBeDestroyed->getName());
         delete threadToBeDestroyed;
         threadToBeDestroyed = NULL;
     }

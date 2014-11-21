@@ -74,6 +74,10 @@ AddrSpace::AddrSpace()
 
 AddrSpace::~AddrSpace()
 {
+    unsigned int i = 0;
+    for(i = 0; i < numPages; ++i) {
+        TheMemoryManager->FreePage(pageTable[i].physicalPage);
+    }
     delete [] pageTable;
 }
 

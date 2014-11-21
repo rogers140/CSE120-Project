@@ -25,7 +25,6 @@
 #include "system.h"
 #include "console.h"
 #include "addrspace.h"
-#include "memorymanager.h"
 #include "syscall.h"
 
 //----------------------------------------------------------------------
@@ -68,8 +67,39 @@ ExceptionHandler(ExceptionType which)
         int arg1 = machine->ReadRegister(4); //read the arg of exit
 
         Thread* t = new Thread("new");
+
+        // char *filename = new char[100];//no longer than 100
+        // int index = 0;
+        // while(1) {
+        //     unsigned int phyAddr = (currentThread->space)->TransPhyAddr(arg1);
+        //     DEBUG('c', "string start :%d\n", phyAddr);
+        //     char *c = NULL;
+        //     machine->ReadMem(phyAddr, 4, (int *)c);
+        //     DEBUG('c', "char is:%c\n", *c);
+        //     if(index == 99) {
+                
+        //         if(*c == '\0') {
+        //             break;
+        //         }
+        //         else {
+        //             //error, 
+        //         }
+        //     }
+        //     else {
+        //         filename[index] = *c;
+        //         if(*c == '\0') {
+        //             break;
+        //         }
+        //         else{
+        //             index += 1;
+        //         }
+        //     }
+
+        // }
+
         OpenFile *executable = fileSystem->Open("../test/exittest");
         ASSERT(executable != NULL);
+
         t->space = new AddrSpace();
         t->space->Initialize(executable);
         DEBUG('a', "Initialized\n");
@@ -77,7 +107,7 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         t->Fork((VoidFunctionPtr)ProcessStart,arg1);
-        //currentThread->Yield();
+        machine->WriteRegister(2, (int)(t->space));
     }
      else {
         printf("Unexpected user mode exception %d %d\n", which, type);
@@ -90,8 +120,8 @@ ExceptionHandler(ExceptionType which)
 void
 ProcessStart(char *filename)
 {
-    DEBUG('a', "enter child process\n");
+    DEBUG('a', "Enter child process\n");
     currentThread->space->InitRegisters();     // set the initial register values
     currentThread->space->RestoreState();      // load page table register
-    machine->Run();         // jump to the user progam
+    machine->Run();                            // jump to the user progam
 }

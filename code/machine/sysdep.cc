@@ -25,7 +25,6 @@
 
 #include "copyright.h"
 
-
 extern "C" {
 #include <stdio.h>
 #include <string.h>
@@ -438,9 +437,8 @@ Exit(int exitCode)
 {
     printf("I am going to exit %d\n",exitCode);
     Thread *t = currentThread;
+    //delete t->space;
     t->Finish();
-    delete t;
-    //exit(exitCode);
 
 }
 //----------------------------------------------------------------------
