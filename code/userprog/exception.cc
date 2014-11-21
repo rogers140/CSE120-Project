@@ -61,7 +61,10 @@ ExceptionHandler(ExceptionType which)
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
     	int arg1 = machine->ReadRegister(4); //read the arg of exit
-        Exit(arg1);
+        printf("I am going to exit %d\n",arg1);
+        Thread *t = currentThread;
+        delete t->space;
+        t->Finish();
     }
     else if ((which == SyscallException) && (type == SC_Exec)) {
         int arg1 = machine->ReadRegister(4); //read the arg of exit
@@ -108,6 +111,7 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         t->Fork((VoidFunctionPtr)ProcessStart,arg1);
         machine->WriteRegister(2, (int)(t->space));
+        //currentThread->Yield();
     }
      else {
         printf("Unexpected user mode exception %d %d\n", which, type);

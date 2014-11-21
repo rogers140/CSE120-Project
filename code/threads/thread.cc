@@ -228,7 +228,6 @@ Thread::Finish ()
         while(joinCalled==0){   //if child has not joined parent and finishes it should not be deleted
             currentThread->Yield();
         }
-
         (void) interrupt->SetLevel(IntOff);
         ASSERT(this == currentThread);
 

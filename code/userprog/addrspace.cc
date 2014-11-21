@@ -74,6 +74,7 @@ AddrSpace::AddrSpace()
 
 AddrSpace::~AddrSpace()
 {
+    DEBUG('a',"Deleteing address space\n");
     unsigned int i = 0;
     for(i = 0; i < numPages; ++i) {
         TheMemoryManager->FreePage(pageTable[i].physicalPage);

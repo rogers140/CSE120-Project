@@ -435,11 +435,7 @@ Abort()
 void
 Exit(int exitCode)
 {
-    printf("I am going to exit %d\n",exitCode);
-    Thread *t = currentThread;
-    //delete t->space;
-    t->Finish();
-
+    exit(exitCode);
 }
 //----------------------------------------------------------------------
 // RandomInit
