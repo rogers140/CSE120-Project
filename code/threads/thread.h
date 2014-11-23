@@ -114,14 +114,13 @@ public:
         printf("%s, ", name);
     }
     // set priority of a thread
-    void setPriority(int newPriority);   // set the priority of the thread
+    void setPriority(int newPriority);      // set the priority of the thread
   
     // get priority of a thread
-    int getPriority();                // get the priority of the thread
+    int getPriority();                      // get the priority of the thread
  
-    void Join();                      // join the thread
-    Thread* getJThread();             // get the joined child thread of parent thread
- 
+    void Join();                            // join the thread
+    Thread* getJThread();                   // get the joined child thread of parent thread
 private:
     // some of the private data for this class is listed above
     
@@ -139,7 +138,6 @@ private:
     int joinCalled;             // join called flag
     int forkCalled;             // fork called flag
     Thread* jThread;            // the thread joined
-
     void StackAllocate(VoidFunctionPtr func, int arg);
     // Allocate a stack for thread.
     // Used internally by Fork()
@@ -152,10 +150,13 @@ private:
     int userRegisters[NumTotalRegs];	// user-level CPU register state
 
 public:
-    void SaveUserState();		// save user-level register state
-    void RestoreUserState();		// restore user-level register state
-
-    AddrSpace *space;			// User code this thread is running.
+    void SaveUserState();		            // save user-level register state
+    void RestoreUserState();		        // restore user-level register state
+    void setSpaceID(int id);                // set space id
+    int getSpaceID();                       // get space id
+    AddrSpace *space;			            // User code this thread is running.
+private:
+    int spaceID;                            // space id of this thread
 #endif
 };
 

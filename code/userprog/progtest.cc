@@ -14,7 +14,9 @@
 #include "addrspace.h"
 #include "synch.h"
 #include "memorymanager.h"
+#include "table.h"
 MemoryManager *TheMemoryManager;
+Table *processTable;
 //----------------------------------------------------------------------
 // StartProcess
 // 	Run a user program.  Open the executable, load it into
@@ -32,6 +34,7 @@ StartProcess(char *filename)
         return;
     }
     TheMemoryManager = new MemoryManager(NumPhysPages);
+    processTable = new Table(50);
     space = new AddrSpace();
     space->Initialize(executable);
     currentThread->space = space;

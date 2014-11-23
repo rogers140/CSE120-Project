@@ -62,6 +62,7 @@ Thread::Thread(char* debugName,int join)
     canJoin = join;
 #ifdef USER_PROGRAM   
     space = NULL;
+    spaceID = -1;               //initialize spaceID as illegal
 #endif
 
 }
@@ -417,5 +418,14 @@ Thread::RestoreUserState()
 {
     for (int i = 0; i < NumTotalRegs; i++)
         machine->WriteRegister(i, userRegisters[i]);
+}
+
+void 
+Thread::setSpaceID(int id) {
+    spaceID = id;
+}
+int 
+Thread::getSpaceID() {
+    return spaceID;
 }
 #endif

@@ -117,7 +117,7 @@ Lock::~Lock() {
 void Lock::Acquire() {
      oldPriority = currentThread->getPriority();
      if(holder!=NULL){
-         ASSERT(holder == currentThread);
+         ASSERT(holder != currentThread);
          //acquire same lock twice is not allowed
      }
      IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts

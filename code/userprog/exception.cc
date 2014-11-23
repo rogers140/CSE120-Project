@@ -26,6 +26,7 @@
 #include "console.h"
 #include "addrspace.h"
 #include "syscall.h"
+#include "table.h"
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -49,8 +50,10 @@
 //	"which" is the kind of exception.  The list of possible exceptions
 //	are in machine.h.
 //----------------------------------------------------------------------
+extern Table *processTable;
 void exit(int exitCode);
 void ProcessStart(char *filename);
+
 void
 ExceptionHandler(ExceptionType which)
 {
@@ -61,15 +64,15 @@ ExceptionHandler(ExceptionType which)
         DEBUG('a', "Shutdown, initiated by user program.\n");
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
-    	int arg1 = machine->ReadRegister(4); //read the arg of exit
+    	int arg1 = machine->ReadRegister(4);                           //read the arg of exit
         exit(arg1);
     }
     else if ((which == SyscallException) && (type == SC_Exec)) {
-        int arg1 = machine->ReadRegister(4); //read the arg of exit
+        int arg1 = machine->ReadRegister(4);                           //read the arg of exit
 
         //reading filename
         const int maxLength = 100;
-        char *filename = new char[maxLength];//no longer than 100
+        char *filename = new char[maxLength];                          //no longer than 100 letters
         int index = 0;
 
         int phyAddr = 0;
@@ -79,16 +82,16 @@ ExceptionHandler(ExceptionType which)
             phyAddr = (currentThread->space)->TransPhyAddr(arg1);
             if(phyAddr == -1) {
                 //error
+                DEBUG('a', "File name reaches illegal virtual address.\n");
+                delete [] filename;
                 return;
             }
             c = (char) machine->mainMemory[phyAddr];
-            //DEBUG('a', "size of return value %d\n", sizeof(machine->mainMemory[phyAddr]));
-            // DEBUG('a',"Read char:%c\n", c);
             if(index == maxLength - 1) {// exceed the max length
                 if(c != '\0') {
                     //error
                     DEBUG('a', "Too long file name.\n");
-                    machine->WriteRegister(2, 0);
+                    delete [] filename;
                     return;
                 }
                 else {
@@ -109,26 +112,34 @@ ExceptionHandler(ExceptionType which)
             
         }
         //DEBUG('a', "File name is: %s\n", filename);
-        //
-
-
         Thread* t = new Thread("Exec");
+        int spaceID = processTable->Alloc((void *) t);
+        if(spaceID == -1) {                                                 // no enough slot in process table
+            //error
+            DEBUG('a', "No enough process table slot.\n");
+            delete t;
+            delete [] filename;
+            return;
+        }
+        else {
+            t->setSpaceID(spaceID);
+        }
         OpenFile *executable = fileSystem->Open(filename);
         if(executable == NULL) {
             //error
-            DEBUG('a', "Can not open file.\n");
-            machine->WriteRegister(2, 0);
+            DEBUG('a', "Executable file is NUll.\n");
+            delete t;
+            delete [] filename;
             return;
         }
 
         t->space = new AddrSpace();
         t->space->Initialize(executable);
-        delete executable;          // close file
-        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);
+        delete executable;                                                  // close file
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         t->Fork((VoidFunctionPtr)ProcessStart,arg1);
-        machine->WriteRegister(2, (int)(t->space));
-        //currentThread->Yield();
+        machine->WriteRegister(2, (int)(spaceID));
     }
      else {
         printf("Unexpected user mode exception %d %d\n", which, type);
@@ -139,7 +150,8 @@ ExceptionHandler(ExceptionType which)
 void exit(int exitCode) {
     printf("I am going to exit %d\n",exitCode);
     Thread *t = currentThread;
-    delete t->space;
+    delete t->space;                        // release the address space of current thread
+    processTable->Release(t->getSpaceID()); // release process table slot before leaving
     t->Finish();
 }
 
