@@ -67,7 +67,7 @@ void
 Semaphore::P()
 {
     IntStatus oldLevel = interrupt->SetLevel(IntOff);	// disable interrupts
-
+    DEBUG('a', "Semaphore P operation.\n");
     while (value == 0) { 			// semaphore not available
         queue->SortedInsert((void *)currentThread,currentThread->getPriority());	// so go to sleep
         currentThread->Sleep();
@@ -89,9 +89,9 @@ Semaphore::P()
 void
 Semaphore::V()
 {
+    DEBUG('a', "Semaphore V operation.\n");
     Thread *thread;
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
-
     thread = (Thread *)queue->SortedRemove(NULL);
     if (thread != NULL)	   // make thread ready, consuming the V immediately
         scheduler->ReadyToRun(thread);
@@ -130,6 +130,7 @@ void Lock::Acquire() {
          oldPriority = holder->getPriority();
          currentThread->Sleep();
      }
+
      isHeld = 1;
      holder = currentThread;
      oldPriority = holder->getPriority();

@@ -18,7 +18,7 @@
 #include "synchconsole.h"
 MemoryManager *TheMemoryManager;
 Table *processTable;
-// SynchConsole *synchConsole;
+//SynchConsole *synchConsole;
 
 //----------------------------------------------------------------------
 // StartProcess

@@ -164,6 +164,7 @@ ExceptionHandler(ExceptionType which)
             synchConsole->Read(phyAddr);
             buffer += 1;
         }
+        delete synchConsole;
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
 
@@ -186,6 +187,7 @@ ExceptionHandler(ExceptionType which)
             synchConsole->Write(phyAddr);
             buffer += 1;
         }
+        delete synchConsole;
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
     }

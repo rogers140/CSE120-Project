@@ -17,16 +17,24 @@ SynchConsole::~SynchConsole() {
 }
 void 
 SynchConsole::Read(int phyAddr) {
+	DEBUG('a', "Trying to acquire the lock.\n");
 	consoleLock->Acquire();
+	DEBUG('a', "Lock has been acquired.\n");
 	readAvail->P();
+	DEBUG('a', "Reading from console.\n");
     machine->mainMemory[phyAddr] = console->GetChar();
+    DEBUG('a', "Release the lock.\n");
 	consoleLock->Release();
 }
 
 void 
 SynchConsole::Write(int phyAddr){
+	DEBUG('a', "Trying to acquire the lock.\n");
 	consoleLock->Acquire();
+	DEBUG('a', "Lock has been acquired.\n");
+	DEBUG('a', "Writting to console.\n");
 	console->PutChar((char) machine->mainMemory[phyAddr]);
     writeDone->P();
+    DEBUG('a', "Release the lock.\n");
 	consoleLock->Release();
 }

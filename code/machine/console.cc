@@ -93,14 +93,24 @@ void
 Console::CheckCharAvail()
 {
     char c;
-
+    
     // schedule the next time to poll for a packet
     interrupt->Schedule(ConsoleReadPoll, (int)this, ConsoleTime,
                         ConsoleReadInt);
+    //test
+    if(incoming == EOF) {
+        DEBUG('a', "Incoming char is EOF.\n");
+    }
+    if(!PollFile(readFileNo)) {
+        DEBUG('a', "Read file is empty.\n");
+    }
+    //test
 
     // do nothing if character is already buffered, or none to be read
-    if ((incoming != EOF) || !PollFile(readFileNo))
+    if ((incoming != EOF) || !PollFile(readFileNo)) {
         return;
+    }
+        
 
     // otherwise, read character and tell user about it
     Read(readFileNo, &c, sizeof(char));
