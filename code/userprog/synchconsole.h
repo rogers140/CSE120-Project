@@ -20,11 +20,11 @@ private:
 	Console *console;
 	Lock *consoleLock;
 	static void ReadAvail(int arg) {
-		DEBUG('a', "Read available.\n");
+		DEBUG('c', "Read available.\n");
 		readAvail->V();
 	}
 	static void WriteDone(int arg) {
-		DEBUG('a', "Write done.\n");
+		DEBUG('c', "Write done.\n");
 		writeDone->V();
 	}
 };

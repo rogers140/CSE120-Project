@@ -99,10 +99,10 @@ Console::CheckCharAvail()
                         ConsoleReadInt);
     //test
     if(incoming == EOF) {
-        DEBUG('a', "Incoming char is EOF.\n");
+        //DEBUG('a', "Incoming char is EOF.\n");
     }
     if(!PollFile(readFileNo)) {
-        DEBUG('a', "Read file is empty.\n");
+        //DEBUG('a', "Read file is empty.\n");
     }
     //test
 

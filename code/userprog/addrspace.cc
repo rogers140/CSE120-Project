@@ -87,7 +87,6 @@ AddrSpace::Initialize(OpenFile *executable)
 {
     NoffHeader noffH;
     unsigned int i, size;
-
     executable->ReadAt((char *)&noffH, sizeof(noffH), 0);
     if ((noffH.noffMagic != NOFFMAGIC) &&
             (WordToHost(noffH.noffMagic) == NOFFMAGIC))
@@ -107,7 +106,15 @@ AddrSpace::Initialize(OpenFile *executable)
     // at least until we have
     // virtual memory
 
-    ASSERT(numPages <= (TheMemoryManager->NumFreePage()));
+    //ASSERT(numPages <= (TheMemoryManager->NumFreePage()));
+    if(numPages > (TheMemoryManager->NumFreePage())) {
+        DEBUG('a', "No enough pages.\n");
+        success = false;
+        return;
+    }
+    else {
+        success = true;
+    }
 
     DEBUG('a', "Initializing address space, num pages %d, size %d\n",
           numPages, size);

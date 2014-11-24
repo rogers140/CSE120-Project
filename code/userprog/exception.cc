@@ -52,7 +52,7 @@
 //	are in machine.h.
 //----------------------------------------------------------------------
 extern Table *processTable;
-//extern SynchConsole *synchConsole;
+extern SynchConsole *synchConsole;
 void exit(int exitCode);
 void ProcessStart(char *filename);
 
@@ -89,6 +89,7 @@ ExceptionHandler(ExceptionType which)
                 //error
                 DEBUG('a', "File name reaches illegal virtual address.\n");
                 delete [] filename;
+                machine->WriteRegister(2, 0); //return 0
                 return;
             }
             c = (char) machine->mainMemory[phyAddr];
@@ -97,6 +98,7 @@ ExceptionHandler(ExceptionType which)
                     //error
                     DEBUG('a', "Too long file name.\n");
                     delete [] filename;
+                    machine->WriteRegister(2, 0); //return 0
                     return;
                 }
                 else {
@@ -124,6 +126,7 @@ ExceptionHandler(ExceptionType which)
             DEBUG('a', "No enough process table slot.\n");
             delete t;
             delete [] filename;
+            machine->WriteRegister(2, 0); //return 0
             return;
         }
         else {
@@ -135,11 +138,16 @@ ExceptionHandler(ExceptionType which)
             DEBUG('a', "Executable file is NUll.\n");
             delete t;
             delete [] filename;
+            machine->WriteRegister(2, 0); //return 0
             return;
         }
 
         t->space = new AddrSpace();
         t->space->Initialize(executable);
+        if(!(t->space->success)) { //initialize space failed
+            machine->WriteRegister(2, 0); //return 0
+            return;
+        }
         delete executable;                                                  // close file
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
@@ -152,19 +160,20 @@ ExceptionHandler(ExceptionType which)
         int size = machine->ReadRegister(5);                           //size to read
         //int id = machine->ReadRegister(6);                           // id
         int i = 0;
-        SynchConsole *synchConsole = new SynchConsole("read console");
+        //SynchConsole *synchConsole = new SynchConsole("read console");
         for(i = 0; i < size; ++i) {
             int phyAddr = currentThread->space->TransPhyAddr(buffer);
             if(phyAddr == -1) {
                 //error
                 DEBUG('a', " Read illegal virtual address.\n");
-                delete synchConsole;
+                //delete synchConsole;
+                //machine->WriteRegister(2, 0); //return 0
                 return;
             }
             synchConsole->Read(phyAddr);
             buffer += 1;
         }
-        delete synchConsole;
+        //delete synchConsole;
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
 
@@ -175,19 +184,19 @@ ExceptionHandler(ExceptionType which)
         int size = machine->ReadRegister(5);                           //size to read
         //int id = machine->ReadRegister(6);                           // id
         int i = 0;
-        SynchConsole *synchConsole = new SynchConsole("read console");
+        //SynchConsole *synchConsole = new SynchConsole("read console");
         for(i = 0; i < size; ++i) {
             int phyAddr = currentThread->space->TransPhyAddr(buffer);
             if(phyAddr == -1) {
                 //error
                 DEBUG('a', " Write illegal virtual address.\n");
-                delete synchConsole;
+                //delete synchConsole;
                 return;
             }
             synchConsole->Write(phyAddr);
             buffer += 1;
         }
-        delete synchConsole;
+        //delete synchConsole;
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
     }

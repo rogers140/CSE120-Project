@@ -18,7 +18,7 @@
 #include "synchconsole.h"
 MemoryManager *TheMemoryManager;
 Table *processTable;
-//SynchConsole *synchConsole;
+SynchConsole *synchConsole;
 
 //----------------------------------------------------------------------
 // StartProcess
@@ -38,7 +38,7 @@ StartProcess(char *filename)
     }
     TheMemoryManager = new MemoryManager(NumPhysPages);
     processTable = new Table(50);
-    //synchConsole = new SynchConsole("SynchConsole");
+    synchConsole = new SynchConsole("SynchConsole");
 
     space = new AddrSpace();
     space->Initialize(executable);

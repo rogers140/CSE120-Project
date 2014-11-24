@@ -34,6 +34,7 @@ public:
     int TransPhyAddr(unsigned int virtAddr); //translate virtual address to physical address
     unsigned int TransPhyOffset(unsigned int virtAddr); //get physical offset
     unsigned int TransPhyNumpage(unsigned int virtAddr);//get physical number of page 
+    bool success; //check if it successfully allocate pages to the thread
 private:
     TranslationEntry *pageTable;	// Assume linear page table translation
     // for now!
