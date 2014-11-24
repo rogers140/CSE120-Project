@@ -15,8 +15,11 @@
 #include "synch.h"
 #include "memorymanager.h"
 #include "table.h"
+#include "synchconsole.h"
 MemoryManager *TheMemoryManager;
 Table *processTable;
+// SynchConsole *synchConsole;
+
 //----------------------------------------------------------------------
 // StartProcess
 // 	Run a user program.  Open the executable, load it into
@@ -35,6 +38,8 @@ StartProcess(char *filename)
     }
     TheMemoryManager = new MemoryManager(NumPhysPages);
     processTable = new Table(50);
+    //synchConsole = new SynchConsole("SynchConsole");
+
     space = new AddrSpace();
     space->Initialize(executable);
     currentThread->space = space;

@@ -27,6 +27,7 @@
 #include "addrspace.h"
 #include "syscall.h"
 #include "table.h"
+#include "synchconsole.h"
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -51,6 +52,7 @@
 //	are in machine.h.
 //----------------------------------------------------------------------
 extern Table *processTable;
+//extern SynchConsole *synchConsole;
 void exit(int exitCode);
 void ProcessStart(char *filename);
 
@@ -68,8 +70,11 @@ ExceptionHandler(ExceptionType which)
         exit(arg1);
     }
     else if ((which == SyscallException) && (type == SC_Exec)) {
-        int arg1 = machine->ReadRegister(4);                           //read the arg of exit
-
+        DEBUG('a', "Enter Exec call.\n");
+        int arg1 = machine->ReadRegister(4);                           //read the arg of Exec
+        // int arg2 = machine->ReadRegister(5);
+        // int arg3 = machine->ReadRegister(6);
+        // int arg4 = machine->ReadRegister(7);
         //reading filename
         const int maxLength = 100;
         char *filename = new char[maxLength];                          //no longer than 100 letters
@@ -141,7 +146,50 @@ ExceptionHandler(ExceptionType which)
         t->Fork((VoidFunctionPtr)ProcessStart,arg1);
         machine->WriteRegister(2, (int)(spaceID));
     }
-     else {
+    else if((which == SyscallException) && (type == SC_Read)) {
+        DEBUG('a', "Enter Read.\n");
+        int buffer = machine->ReadRegister(4);                           //virtual address of buffer
+        int size = machine->ReadRegister(5);                           //size to read
+        //int id = machine->ReadRegister(6);                           // id
+        int i = 0;
+        SynchConsole *synchConsole = new SynchConsole("read console");
+        for(i = 0; i < size; ++i) {
+            int phyAddr = currentThread->space->TransPhyAddr(buffer);
+            if(phyAddr == -1) {
+                //error
+                DEBUG('a', " Read illegal virtual address.\n");
+                delete synchConsole;
+                return;
+            }
+            synchConsole->Read(phyAddr);
+            buffer += 1;
+        }
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+
+    }
+    else if((which == SyscallException) && (type == SC_Write)) {
+        DEBUG('a', "Enter Write.\n");
+        int buffer = machine->ReadRegister(4);                           //virtual address of buffer
+        int size = machine->ReadRegister(5);                           //size to read
+        //int id = machine->ReadRegister(6);                           // id
+        int i = 0;
+        SynchConsole *synchConsole = new SynchConsole("read console");
+        for(i = 0; i < size; ++i) {
+            int phyAddr = currentThread->space->TransPhyAddr(buffer);
+            if(phyAddr == -1) {
+                //error
+                DEBUG('a', " Write illegal virtual address.\n");
+                delete synchConsole;
+                return;
+            }
+            synchConsole->Write(phyAddr);
+            buffer += 1;
+        }
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+    }
+    else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
     }
