@@ -72,13 +72,17 @@ ExceptionHandler(ExceptionType which)
     else if ((which == SyscallException) && (type == SC_Exec)) {
         DEBUG('a', "Enter Exec call.\n");
         int arg1 = machine->ReadRegister(4);                           //read the arg of Exec
-        // int arg2 = machine->ReadRegister(5);
-        // int arg3 = machine->ReadRegister(6);
-        // int arg4 = machine->ReadRegister(7);
+        int argc = machine->ReadRegister(5);
+        int argv = machine->ReadRegister(6);
+        int willJoin = machine->ReadRegister(7);
         //reading filename
         const int maxLength = 100;
         char *filename = new char[maxLength];                          //no longer than 100 letters
         int index = 0;
+
+
+
+        
 
         int phyAddr = 0;
         char c = '\0';
@@ -143,7 +147,45 @@ ExceptionHandler(ExceptionType which)
         }
 
         t->space = new AddrSpace();
-        t->space->Initialize(executable);
+
+        if(argc<=0){
+            t->space->Initialize(executable, 0);
+        }else{
+            t->space->Initialize(executable, 3);
+            int readArgAddr = argv;
+            int writeArgAddr = t->space->getArgStart();
+            for(int i = 0;i < argc;++i){
+                while(1){
+                    phyAddr = (currentThread->space)->TransPhyAddr(readArgAddr);
+                    if(phyAddr == -1) {
+                        //error
+                        DEBUG('a', " Read illegal virtual address.\n");
+                        //delete synchConsole;
+                        //machine->WriteRegister(2, 0); //return 0
+                        return;
+                    }
+                    c = (char) machine->mainMemory[phyAddr];
+                    phyAddr = (t->space)->TransPhyAddr(writeArgAddr);
+                    if(phyAddr == -1) {
+                        //error
+                        DEBUG('a', " Read illegal virtual address.\n");
+                        //delete synchConsole;
+                        //machine->WriteRegister(2, 0); //return 0
+                        return;
+                    }
+                    machine->mainMemory[phyAddr] = c;
+                    readArgAddr += 1;
+                    writeArgAddr += 1;
+                    if(c == '\0'){
+                        break;
+                    }
+                    
+                    
+                }
+            }
+        }
+        machine -> WriteRegister(6 , t->space->getArgStart());
+        
         if(!(t->space->success)) { //initialize space failed
             machine->WriteRegister(2, 0); //return 0
             return;
@@ -151,7 +193,7 @@ ExceptionHandler(ExceptionType which)
         delete executable;                                                  // close file
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
-        t->Fork((VoidFunctionPtr)ProcessStart,arg1);
+        t->Fork((VoidFunctionPtr)ProcessStart,willJoin);
         //t->Join();
         machine->WriteRegister(2, (int)(spaceID));
     }

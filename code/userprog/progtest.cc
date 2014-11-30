@@ -41,7 +41,7 @@ StartProcess(char *filename)
     synchConsole = new SynchConsole("SynchConsole");
 
     space = new AddrSpace();
-    space->Initialize(executable);
+    space->Initialize(executable, 0);
     currentThread->space = space;
 
     delete executable;			// close file

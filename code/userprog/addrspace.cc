@@ -83,7 +83,7 @@ AddrSpace::~AddrSpace()
 }
 
 void
-AddrSpace::Initialize(OpenFile *executable)
+AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
 {
     NoffHeader noffH;
     unsigned int i, size;
@@ -97,7 +97,8 @@ AddrSpace::Initialize(OpenFile *executable)
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size
            + UserStackSize; // we need to increase the size
     // to leave room for the stack
-    numPages = divRoundUp(size, PageSize);
+    ASSERT(numOfExtraPages >= 0);
+    numPages = divRoundUp(size, PageSize)+numOfExtraPages;
     size = numPages * PageSize;
 
 
@@ -129,6 +130,11 @@ AddrSpace::Initialize(OpenFile *executable)
         pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
         // a separate page, we could set its
         // pages to be read-only
+    }
+    if(numOfExtraPages>0){
+        argStart = (numPages - numOfExtraPages -1) * PageSize;
+    }else{
+        argStart = 0;
     }
 
 // zero out the entire address space page by page, to zero the unitialized data segment
@@ -345,4 +351,8 @@ unsigned int AddrSpace::TransPhyNumpage(unsigned int virtAddr)
     entry = &pageTable[vpn];
     pageFrame = entry->physicalPage;
     return pageFrame;
+}
+
+unsigned int AddrSpace::getArgStart(){
+    return argStart;
 }
