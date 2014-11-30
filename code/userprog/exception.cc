@@ -152,6 +152,7 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         t->Fork((VoidFunctionPtr)ProcessStart,arg1);
+        //t->Join();
         machine->WriteRegister(2, (int)(spaceID));
     }
     else if((which == SyscallException) && (type == SC_Read)) {
@@ -200,18 +201,105 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
     }
+
+    else if(which == PageFaultException){
+        printf("PageFaultException\n");
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        //if((processTable->Isempty())==0){
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
+
+    }
+    else if(which == ReadOnlyException){
+        printf("ReadOnlyException\n");
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        //if((processTable->Isempty())==0){
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
+    }
+    else if(which == BusErrorException){
+        printf("BusErrorException\n");
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        //if((processTable->Isempty())==0){
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
+
+    }
+    else if(which == AddressErrorException){
+        printf("AddressErrorException\n");
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        //if((processTable->Isempty())==0){
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
+        //}
+        //else{
+        //    interrupt->Halt();
+        //}
+
+
+    }
+    else if(which == OverflowException){
+        printf("OverflowException\n");
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        //if((processTable->Isempty())==0){
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
+
+    }
+    else if(which == IllegalInstrException){
+        printf("IllegalInstrException\n");
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
+
+    }
+    else if(which == NumExceptionTypes){
+        printf("NumExceptionTypes\n");
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        //if((processTable->Isempty())==0){
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
+
+    }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
     }
+
     
 }
 void exit(int exitCode) {
     printf("I am going to exit %d\n",exitCode);
     Thread *t = currentThread;
-    delete t->space;                        // release the address space of current thread
-    processTable->Release(t->getSpaceID()); // release process table slot before leaving
-    t->Finish();
+    //if((processTable->Isempty())==0){
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID()); // release process table slot before leaving
+        t->Finish(); 
+    //}  
+    //else{
+        interrupt->Halt();
+    //}
 }
 
 void

@@ -37,3 +37,15 @@ Table::Release(int index) {
 	array[index] = NULL;
 	tableLock->Release();
 }
+
+bool 
+Table::Isempty(){
+	for(int i = 0; i < tableSize; ++i) {
+		if(array[i] != NULL){
+			return 0;
+		}
+		
+	}
+
+	return 1;
+}

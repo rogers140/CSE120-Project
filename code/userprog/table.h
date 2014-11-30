@@ -16,6 +16,8 @@ public:
 	void *Get(int index);
 	/* Free the table slot at index. */
 	void Release(int index);
+    /* check if table is empty. */
+    bool Isempty();
 
 private:
 	int tableSize;
