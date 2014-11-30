@@ -99,6 +99,7 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
     // to leave room for the stack
     ASSERT(numOfExtraPages >= 0);
     numPages = divRoundUp(size, PageSize)+numOfExtraPages;
+    DEBUG('c',"Number of extra page: %d\n", numOfExtraPages);
     size = numPages * PageSize;
 
 
@@ -132,7 +133,7 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
         // pages to be read-only
     }
     if(numOfExtraPages>0){
-        argStart = (numPages - numOfExtraPages -1) * PageSize;
+        argStart = (numPages - numOfExtraPages) * PageSize;
     }else{
         argStart = 0;
     }

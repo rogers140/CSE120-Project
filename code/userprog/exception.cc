@@ -80,10 +80,6 @@ ExceptionHandler(ExceptionType which)
         char *filename = new char[maxLength];                          //no longer than 100 letters
         int index = 0;
 
-
-
-        
-
         int phyAddr = 0;
         char c = '\0';
         
@@ -147,41 +143,41 @@ ExceptionHandler(ExceptionType which)
         }
 
         t->space = new AddrSpace();
-
+        //implement arguement copying
+        DEBUG('c', "number of arguement %d\n", argc);
         if(argc<=0){
             t->space->Initialize(executable, 0);
         }else{
             t->space->Initialize(executable, 3);
             int readArgAddr = argv;
             int writeArgAddr = t->space->getArgStart();
-            for(int i = 0;i < argc;++i){
+            DEBUG('c', "readAddress %d\n", readArgAddr);
+            DEBUG('c', "writeAddress %d\n", writeArgAddr);
+            for(int i = 0;i < argc; ++i){
+                DEBUG('c', "loop %d\n", i);
+                DEBUG('c', "string %d virtual address %d.\n", i, readArgAddr);
+                while(readArgAddr % 4 != 0) {
+                    readArgAddr += 1;
+                    writeArgAddr += 1;
+                }
                 while(1){
-                    phyAddr = (currentThread->space)->TransPhyAddr(readArgAddr);
+                    int currentPhyAddr = (currentThread->space)->TransPhyAddr(readArgAddr);
                     if(phyAddr == -1) {
-                        //error
-                        DEBUG('a', " Read illegal virtual address.\n");
-                        //delete synchConsole;
-                        //machine->WriteRegister(2, 0); //return 0
+                        DEBUG('c', " Read illegal virtual address.\n");
+                        machine->WriteRegister(2, 0); //return 0
                         return;
                     }
-                    c = (char) machine->mainMemory[phyAddr];
-                    phyAddr = (t->space)->TransPhyAddr(writeArgAddr);
-                    if(phyAddr == -1) {
-                        //error
-                        DEBUG('a', " Read illegal virtual address.\n");
-                        //delete synchConsole;
-                        //machine->WriteRegister(2, 0); //return 0
-                        return;
-                    }
-                    machine->mainMemory[phyAddr] = c;
+                    c = (char) machine->mainMemory[currentPhyAddr];
+                    DEBUG('c', "reading char: %c\n", c);
+                    int newPhyAddr = (t->space)->TransPhyAddr(writeArgAddr);
+                    machine->mainMemory[newPhyAddr] = c;
                     readArgAddr += 1;
                     writeArgAddr += 1;
                     if(c == '\0'){
                         break;
-                    }
-                    
-                    
+                    }    
                 }
+                //readArgAddr += 1;
             }
         }
         machine -> WriteRegister(6 , t->space->getArgStart());
@@ -208,9 +204,9 @@ ExceptionHandler(ExceptionType which)
             int phyAddr = currentThread->space->TransPhyAddr(buffer);
             if(phyAddr == -1) {
                 //error
-                DEBUG('a', " Read illegal virtual address.\n");
+                DEBUG('a', "Read illegal virtual address.\n");
                 //delete synchConsole;
-                //machine->WriteRegister(2, 0); //return 0
+                machine->WriteRegister(2, 0); //return 0
                 return;
             }
             synchConsole->Read(phyAddr);
@@ -229,16 +225,19 @@ ExceptionHandler(ExceptionType which)
         int i = 0;
         //SynchConsole *synchConsole = new SynchConsole("read console");
         for(i = 0; i < size; ++i) {
+            DEBUG('c', "write to VA:%d\n", buffer);
             int phyAddr = currentThread->space->TransPhyAddr(buffer);
             if(phyAddr == -1) {
                 //error
-                DEBUG('a', " Write illegal virtual address.\n");
+                DEBUG('a', "Write illegal virtual address.\n");
                 //delete synchConsole;
+                machine->WriteRegister(2, 0); //return 0
                 return;
             }
             synchConsole->Write(phyAddr);
             buffer += 1;
         }
+        machine->WriteRegister(2, size);
         //delete synchConsole;
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
@@ -318,7 +317,6 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         Thread *t = currentThread;
-        //if((processTable->Isempty())==0){
         delete t->space;                        // release the address space of current thread
         processTable->Release(t->getSpaceID());
         t->Finish();
@@ -326,6 +324,12 @@ ExceptionHandler(ExceptionType which)
     }
     else {
         printf("Unexpected user mode exception %d %d\n", which, type);
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        Thread *t = currentThread;
+        delete t->space;                        // release the address space of current thread
+        processTable->Release(t->getSpaceID());
+        t->Finish();
         ASSERT(FALSE);
     }
 
@@ -340,7 +344,7 @@ void exit(int exitCode) {
         t->Finish(); 
     //}  
     //else{
-        interrupt->Halt();
+        //interrupt->Halt(); //why 
     //}
 }
 
