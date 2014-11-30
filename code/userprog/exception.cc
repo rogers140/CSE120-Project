@@ -143,8 +143,8 @@ ExceptionHandler(ExceptionType which)
         }
 
         t->space = new AddrSpace();
-        //implement arguement copying
-        DEBUG('c', "number of arguement %d\n", argc);
+        //implement argument copying
+        DEBUG('c', "number of argument %d\n", argc);
         if(argc<=0){
             t->space->Initialize(executable, 0);
         }else{
@@ -154,12 +154,12 @@ ExceptionHandler(ExceptionType which)
             DEBUG('c', "readAddress %d\n", readArgAddr);
             DEBUG('c', "writeAddress %d\n", writeArgAddr);
             for(int i = 0;i < argc; ++i){
-                DEBUG('c', "loop %d\n", i);
-                DEBUG('c', "string %d virtual address %d.\n", i, readArgAddr);
-                while(readArgAddr % 4 != 0) {
+                while(readArgAddr % 4 != 0) { //align address into 4
                     readArgAddr += 1;
                     writeArgAddr += 1;
                 }
+                DEBUG('c', "loop %d\n", i);
+                DEBUG('c', "string %d virtual address %d.\n", i, readArgAddr);
                 while(1){
                     int currentPhyAddr = (currentThread->space)->TransPhyAddr(readArgAddr);
                     if(phyAddr == -1) {
@@ -180,7 +180,7 @@ ExceptionHandler(ExceptionType which)
                 //readArgAddr += 1;
             }
         }
-        machine -> WriteRegister(6 , t->space->getArgStart());
+        machine -> WriteRegister(5 , t->space->getArgStart());
         
         if(!(t->space->success)) { //initialize space failed
             machine->WriteRegister(2, 0); //return 0
