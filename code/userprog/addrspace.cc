@@ -99,14 +99,22 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
     // to leave room for the stack
     ASSERT(numOfExtraPages >= 0);
     numPages = divRoundUp(size, PageSize)+numOfExtraPages;
+    DEBUG('c',"Number of extra page: %d\n", numOfExtraPages);
     size = numPages * PageSize;
 
-
-    ASSERT(numPages <= NumPhysPages);       // check we're not trying
+    //do not assert!
+    //ASSERT(numPages <= NumPhysPages);       // check we're not trying
     // to run anything too big --
     // at least until we have
     // virtual memory
-
+    if(numPages > NumPhysPages) {
+        DEBUG('a', "Too big num of pages.\n");
+        success = false;
+        return;
+    }
+    else {
+        success = true;
+    }
     //ASSERT(numPages <= (TheMemoryManager->NumFreePage()));
     if(numPages > (TheMemoryManager->NumFreePage())) {
         DEBUG('a', "No enough pages.\n");
