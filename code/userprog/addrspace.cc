@@ -132,7 +132,7 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
         // pages to be read-only
     }
     if(numOfExtraPages>0){
-        argStart = (numPages - numOfExtraPages -1) * PageSize;
+        argStart = (numPages - numOfExtraPages) * PageSize;
     }else{
         argStart = 0;
     }

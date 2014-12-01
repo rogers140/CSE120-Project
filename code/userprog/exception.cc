@@ -123,7 +123,7 @@ ExceptionHandler(ExceptionType which)
             
         }
         //DEBUG('a', "File name is: %s\n", filename);
-        Thread* t = new Thread("Exec");
+        Thread* t = new Thread("Exec",1);
         int spaceID = processTable->Alloc((void *) t);
         if(spaceID == -1) {                                                 // no enough slot in process table
             //error
@@ -194,7 +194,6 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         t->Fork((VoidFunctionPtr)ProcessStart,willJoin);
-        //t->Join();
         machine->WriteRegister(2, (int)(spaceID));
     }
     else if((which == SyscallException) && (type == SC_Read)) {
@@ -240,6 +239,28 @@ ExceptionHandler(ExceptionType which)
             buffer += 1;
         }
         //delete synchConsole;
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+    }
+
+    else if((which == SyscallException) && (type == SC_Join)) {
+        DEBUG('a', "Enter Join.\n");
+        int pid = machine -> ReadRegister(4);
+        // if(processTable->EntryExist((void*)pid)<0){
+        //     machine->WriteRegister(2,-65535);
+
+        // }else{
+        while(pid==0){
+            pid = machine -> ReadRegister(4);
+        }
+            Thread *son = (Thread*)pid;
+            DEBUG('a', "The pid of the son is %d.\n",pid);
+            currentThread->setJThread(son);
+            son->Join();
+            machine->WriteRegister(2,(int)currentThread);
+
+        // }
+
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
     }

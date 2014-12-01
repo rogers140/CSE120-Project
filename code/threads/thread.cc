@@ -143,6 +143,11 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     (void) interrupt->SetLevel(oldLevel);
 }
 
+void
+Thread::setJThread(Thread *t){
+    jThread = t;
+}
+
 //----------------------------------------------------------------------
 // Thread::CheckOverflow
 // 	Check a thread's stack to see if it has overrun the space

@@ -121,6 +121,7 @@ public:
  
     void Join();                            // join the thread
     Thread* getJThread();                   // get the joined child thread of parent thread
+    void setJThread(Thread *t);                      // add for process join
 private:
     // some of the private data for this class is listed above
     

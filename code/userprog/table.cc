@@ -49,3 +49,18 @@ Table::Isempty(){
 
 	return 1;
 }
+
+int
+Table::EntryExist(void *object){
+	tableLock->Acquire();
+	int i = 0;
+	for(i = 0; i <tableSize; ++i) {
+		if(array[i] = object) {			
+			tableLock->Release();
+			return i; // return the index of the entry
+		}
+	}
+	tableLock->Release();
+	return -1; // entry not found
+
+}
