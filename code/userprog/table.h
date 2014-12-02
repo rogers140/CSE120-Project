@@ -18,6 +18,8 @@ public:
 	void Release(int index);
     /* check if table is empty. */
     bool Isempty();
+    /* check if there exist some entry. */
+    int EntryExist(void *object);
 
 private:
 	int tableSize;

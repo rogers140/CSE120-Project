@@ -143,6 +143,15 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     (void) interrupt->SetLevel(oldLevel);
 }
 
+void
+Thread::setJThread(Thread *t){
+    jThread = t;
+}
+void
+Thread::setName(char* sname){
+    name = sname;
+}
+
 //----------------------------------------------------------------------
 // Thread::CheckOverflow
 // 	Check a thread's stack to see if it has overrun the space
@@ -192,7 +201,7 @@ Thread::Join()
     ASSERT(joinCalled==0);    //ASSERT join() has not been called
     ASSERT(canJoin==1)        //ASSERT this thread can be joined
     Thread* tmp = currentThread->getJThread();  // get the joined child thread of the parent thread
-    ASSERT(tmp == currentThread);    //ASSERT the thread does not join itself
+    ASSERT(tmp != currentThread);    //ASSERT the thread does not join itself
     tmp->isJoined = 1;
     if(tmp->getPriority() > currentThread->getPriority()) {
         tmp->setPriority(-1*currentThread->getPriority()); // Magic!! don't touch

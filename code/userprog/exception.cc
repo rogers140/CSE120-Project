@@ -93,6 +93,12 @@ ExceptionHandler(ExceptionType which)
                 return;
             }
             c = (char) machine->mainMemory[phyAddr];
+            if(c>128||c<0){
+                DEBUG('a', "Bad string address, not ascii code.\n");
+                delete [] filename;
+                machine->WriteRegister(2, 0); //return 0
+                return;
+            }
             if(index == maxLength - 1) {// exceed the max length
                 if(c != '\0') {
                     //error
@@ -119,7 +125,7 @@ ExceptionHandler(ExceptionType which)
             
         }
         //DEBUG('a', "File name is: %s\n", filename);
-        Thread* t = new Thread("Exec");
+        Thread* t = new Thread("Exec",1);
         int spaceID = processTable->Alloc((void *) t);
         if(spaceID == -1) {                                                 // no enough slot in process table
             //error
@@ -190,7 +196,6 @@ ExceptionHandler(ExceptionType which)
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         t->Fork((VoidFunctionPtr)ProcessStart,willJoin);
-        //t->Join();
         machine->WriteRegister(2, (int)(spaceID));
     }
     else if((which == SyscallException) && (type == SC_Read)) {
@@ -239,6 +244,32 @@ ExceptionHandler(ExceptionType which)
         }
         machine->WriteRegister(2, size);
         //delete synchConsole;
+        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+    }
+
+    else if((which == SyscallException) && (type == SC_Join)) {
+        DEBUG('a', "Enter Join.\n");
+        int pid = machine -> ReadRegister(4);
+        if(processTable->Get(pid)==NULL){
+            DEBUG('a', "Invalid pid.\n");
+            machine->WriteRegister(2,-65535);
+            return;
+
+        }else{
+        
+            pid = machine -> ReadRegister(4);
+        
+            Thread *son = (Thread*)(processTable->Get(pid));
+            son->setName("son");
+            
+
+            currentThread->setJThread(son);
+            son->Join();
+            machine->WriteRegister(2,(int)currentThread);
+
+        }
+
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
     }
