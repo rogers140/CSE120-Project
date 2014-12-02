@@ -1,18 +1,18 @@
 // exception.cc
-//	Entry point into the Nachos kernel from user programs.
-//	There are two kinds of things that can cause control to
-//	transfer back to here from user code:
+//  Entry point into the Nachos kernel from user programs.
+//  There are two kinds of things that can cause control to
+//  transfer back to here from user code:
 //
-//	syscall -- The user code explicitly requests to call a procedure
-//	in the Nachos kernel.  Right now, the only function we support is
-//	"Halt".
+//  syscall -- The user code explicitly requests to call a procedure
+//  in the Nachos kernel.  Right now, the only function we support is
+//  "Halt".
 //
-//	exceptions -- The user code does something that the CPU can't handle.
-//	For instance, accessing memory that doesn't exist, arithmetic errors,
-//	etc.
+//  exceptions -- The user code does something that the CPU can't handle.
+//  For instance, accessing memory that doesn't exist, arithmetic errors,
+//  etc.
 //
-//	Interrupts (which can also cause control to transfer from user
-//	code into the Nachos kernel) are handled elsewhere.
+//  Interrupts (which can also cause control to transfer from user
+//  code into the Nachos kernel) are handled elsewhere.
 //
 // For now, this only handles the Halt() system call.
 // Everything else core dumps.
@@ -31,25 +31,25 @@
 
 //----------------------------------------------------------------------
 // ExceptionHandler
-// 	Entry point into the Nachos kernel.  Called when a user program
-//	is executing, and either does a syscall, or generates an addressing
-//	or arithmetic exception.
+//  Entry point into the Nachos kernel.  Called when a user program
+//  is executing, and either does a syscall, or generates an addressing
+//  or arithmetic exception.
 //
-// 	For system calls, the following is the calling convention:
+//  For system calls, the following is the calling convention:
 //
-// 	system call code -- r2
-//		arg1 -- r4
-//		arg2 -- r5
-//		arg3 -- r6
-//		arg4 -- r7
+//  system call code -- r2
+//      arg1 -- r4
+//      arg2 -- r5
+//      arg3 -- r6
+//      arg4 -- r7
 //
-//	The result of the system call, if any, must be put back into r2.
+//  The result of the system call, if any, must be put back into r2.
 //
 // And don't forget to increment the pc before returning. (Or else you'll
 // loop making the same system call forever!
 //
-//	"which" is the kind of exception.  The list of possible exceptions
-//	are in machine.h.
+//  "which" is the kind of exception.  The list of possible exceptions
+//  are in machine.h.
 //----------------------------------------------------------------------
 extern Table *processTable;
 extern SynchConsole *synchConsole;
@@ -66,7 +66,7 @@ ExceptionHandler(ExceptionType which)
         DEBUG('a', "Shutdown, initiated by user program.\n");
         interrupt->Halt();
     }else if ((which == SyscallException) && (type == SC_Exit)) {
-    	int arg1 = machine->ReadRegister(4);                           //read the arg of exit
+        int arg1 = machine->ReadRegister(4);                           //read the arg of exit
         exit(arg1);
     }
     else if ((which == SyscallException) && (type == SC_Exec)) {
@@ -251,7 +251,6 @@ ExceptionHandler(ExceptionType which)
     else if((which == SyscallException) && (type == SC_Join)) {
         DEBUG('a', "Enter Join.\n");
         int pid = machine -> ReadRegister(4);
-<<<<<<< HEAD
         if(processTable->Get(pid)==NULL){
             DEBUG('a', "Invalid pid.\n");
             machine->WriteRegister(2,-65535);
@@ -265,26 +264,11 @@ ExceptionHandler(ExceptionType which)
             son->setName("son");
             
 
-=======
-        // if(processTable->EntryExist((void*)pid)<0){
-        //     machine->WriteRegister(2,-65535);
-
-        // }else{
-        while(pid==0){
-            pid = machine -> ReadRegister(4);
-        }
-            Thread *son = (Thread*)pid;
-            DEBUG('a', "The pid of the son is %d.\n",pid);
->>>>>>> a072c009a93f94abd6bcd49c1d45ffdffe723999
             currentThread->setJThread(son);
             son->Join();
             machine->WriteRegister(2,(int)currentThread);
 
-<<<<<<< HEAD
         }
-=======
-        // }
->>>>>>> a072c009a93f94abd6bcd49c1d45ffdffe723999
 
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
