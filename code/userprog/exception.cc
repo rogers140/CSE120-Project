@@ -251,6 +251,7 @@ ExceptionHandler(ExceptionType which)
     else if((which == SyscallException) && (type == SC_Join)) {
         DEBUG('a', "Enter Join.\n");
         int pid = machine -> ReadRegister(4);
+<<<<<<< HEAD
         if(processTable->Get(pid)==NULL){
             DEBUG('a', "Invalid pid.\n");
             machine->WriteRegister(2,-65535);
@@ -264,11 +265,26 @@ ExceptionHandler(ExceptionType which)
             son->setName("son");
             
 
+=======
+        // if(processTable->EntryExist((void*)pid)<0){
+        //     machine->WriteRegister(2,-65535);
+
+        // }else{
+        while(pid==0){
+            pid = machine -> ReadRegister(4);
+        }
+            Thread *son = (Thread*)pid;
+            DEBUG('a', "The pid of the son is %d.\n",pid);
+>>>>>>> a072c009a93f94abd6bcd49c1d45ffdffe723999
             currentThread->setJThread(son);
             son->Join();
             machine->WriteRegister(2,(int)currentThread);
 
+<<<<<<< HEAD
         }
+=======
+        // }
+>>>>>>> a072c009a93f94abd6bcd49c1d45ffdffe723999
 
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);

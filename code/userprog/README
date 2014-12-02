@@ -1,0 +1,17 @@
+Team member:
+	Lijun Chen
+	Yiqiu Liu
+	Ruogu Liu
+	Nasha Zhai
+
+We have implemented part 1, 2, 4, 5, 6(extra credit). And nearly figure out how to deal with part 3. And we have made some tests on the following aspects:
+1. Exec:
+	We tested basic Exit("../test/exittest",0, 0, 0), and tested more than one Exec called in the same program (so there will be multithreading). And they all works well.
+2. Read & Write:
+	We tested the "echo.c" with the Read & Write. And we also tested "snake.c" after increasing the phyNumofPages to 40. Both of them rans well.
+3. Exception:
+	We implemented various non-system-call exceptions defined by machine.h, as soon as we catch those exceptions, we print exception message and kill the current thread. And we wrote 5 test file to test our code, including both calling directly and calling by "Exec". They all rans well.
+4. Join:
+	We implemented Join system call and tested it with "jointest.c". And it rans well.
+
+In this project, we four worked together. Lijun Chen implemented Exec, Yiqiu Liu implemented Join, Nasha Zhai implemented Exception, Ruogu Liu implemented Read & Write.

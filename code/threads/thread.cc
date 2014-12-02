@@ -147,10 +147,13 @@ void
 Thread::setJThread(Thread *t){
     jThread = t;
 }
+<<<<<<< HEAD
 void
 Thread::setName(char* sname){
     name = sname;
 }
+=======
+>>>>>>> a072c009a93f94abd6bcd49c1d45ffdffe723999
 
 //----------------------------------------------------------------------
 // Thread::CheckOverflow
