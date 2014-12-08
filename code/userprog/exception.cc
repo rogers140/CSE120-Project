@@ -192,7 +192,7 @@ ExceptionHandler(ExceptionType which)
             machine->WriteRegister(2, 0); //return 0
             return;
         }
-        delete executable;                                                  // close file
+        //delete executable;                                                  // close file
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
         t->Fork((VoidFunctionPtr)ProcessStart,willJoin);
@@ -275,14 +275,20 @@ ExceptionHandler(ExceptionType which)
     }
 
     else if(which == PageFaultException){
-        printf("PageFaultException\n");
-        machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
-        machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        DEBUG('a',"PageFaultException.\n");
         Thread *t = currentThread;
-        //if((processTable->Isempty())==0){
-        delete t->space;                        // release the address space of current thread
-        processTable->Release(t->getSpaceID());
-        t->Finish();
+        int faultAddr = machine->ReadRegister(39);
+        DEBUG('a', "fault page address: %d\n", faultAddr);
+        int virtualPageNum = faultAddr / PageSize;
+        DEBUG('a', "virtual page number: %d\n", virtualPageNum);
+        t->space->PageIn(virtualPageNum);
+        // machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
+        // machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+        // Thread *t = currentThread;
+        // //if((processTable->Isempty())==0){
+        // delete t->space;                        // release the address space of current thread
+        // processTable->Release(t->getSpaceID());
+        // t->Finish();
 
     }
     else if(which == ReadOnlyException){

@@ -30,7 +30,8 @@ public:
     void SaveState();			// Save/restore address space-specific
     void RestoreState();		// info on a context switch
     void Initialize(OpenFile *executable, int numOfExtraPages);   // initializing it with the program
-                                             // stored in the file "executable"  
+                                             // stored in the file "executable" 
+    void PageIn(int virtualPageNum); 
     int TransPhyAddr(unsigned int virtAddr); //translate virtual address to physical address
     unsigned int TransPhyOffset(unsigned int virtAddr); //get physical offset
     unsigned int TransPhyNumpage(unsigned int virtAddr);//get physical number of page 
@@ -41,6 +42,14 @@ private:
     // for now!
     unsigned int numPages;		// Number of pages in the virtual
     unsigned int argStart;               // If there are arguments, this is the start address of arguments
+    OpenFile *execFile;
+    int CodeStart;
+    int DataStart;
+    int CodeEnd;
+    int DataEnd;
+    int FileCodeStart;
+    int FileDataStart;
+
 };
 
 #endif // ADDRSPACE_H
