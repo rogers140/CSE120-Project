@@ -108,7 +108,10 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size
            + UserStackSize; // we need to increase the size
     // to leave room for the stack
-    ASSERT(numOfExtraPages >= 0);
+    if(numOfExtraPages < 0) {
+        success = false;
+        return;
+    }
     numPages = divRoundUp(size, PageSize)+numOfExtraPages;
     //DEBUG('c',"Number of extra page: %d\n", numOfExtraPages);
     size = numPages * PageSize;
@@ -124,16 +127,16 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
         pageTable[i].readOnly = FALSE;  // if the code segment was entirely on
-        // a separate page, we could set its
-        // pages to be read-only
     }
     if(numOfExtraPages>0){
         argStart = (numPages - numOfExtraPages) * PageSize;
     }else{
         argStart = 0;
     }
+    success = true;
 
 }
+
 TranslationEntry *
 AddrSpace::getPageTable() {
     return pageTable;

@@ -74,8 +74,8 @@ ExceptionHandler(ExceptionType which)
     else if ((which == SyscallException) && (type == SC_Exec)) {
         DEBUG('c', "Enter Exec call.\n");
         int arg1 = machine->ReadRegister(4);                           //read the arg of Exec
-        int argc = machine->ReadRegister(5);
-        int argv = machine->ReadRegister(6);
+        //int argc = machine->ReadRegister(5);
+        //int argv = machine->ReadRegister(6);
         int willJoin = machine->ReadRegister(7);
         //reading filename
         const int maxLength = 100;
@@ -87,6 +87,7 @@ ExceptionHandler(ExceptionType which)
         
         while(1) {
             phyAddr = (currentThread->space)->TransPhyAddr(arg1);
+            DEBUG('c', "phyaddr: %d\n", phyAddr);
             if(phyAddr == -1) {
                 //error
                 DEBUG('c', "File name reaches illegal virtual address.\n");
@@ -126,12 +127,12 @@ ExceptionHandler(ExceptionType which)
             }
             
         }
-        //DEBUG('a', "File name is: %s\n", filename);
+        DEBUG('c', "File name is: %s\n", filename);
         Thread* t = new Thread("Exec",1);
         int spaceID = processTable->Alloc((void *) t);
         if(spaceID == -1) {                                                 // no enough slot in process table
             //error
-            DEBUG('a', "No enough process table slot.\n");
+            DEBUG('c', "No enough process table slot.\n");
             delete t;
             delete [] filename;
             machine->WriteRegister(2, 0); //return 0
@@ -143,7 +144,7 @@ ExceptionHandler(ExceptionType which)
         OpenFile *executable = fileSystem->Open(filename);
         if(executable == NULL) {
             //error
-            DEBUG('a', "Executable file is NUll.\n");
+            DEBUG('c', "Executable file is NUll.\n");
             delete t;
             delete [] filename;
             machine->WriteRegister(2, 0); //return 0
@@ -152,45 +153,47 @@ ExceptionHandler(ExceptionType which)
 
         t->space = new AddrSpace();
         //implement argument copying
-        DEBUG('c', "number of argument %d\n", argc);
-        if(argc<=0){
-            t->space->Initialize(executable, 0);
-        }else{
-            t->space->Initialize(executable, 3);
-            int readArgAddr = argv;
-            int writeArgAddr = t->space->getArgStart();
-            DEBUG('c', "readAddress %d\n", readArgAddr);
-            DEBUG('c', "writeAddress %d\n", writeArgAddr);
-            for(int i = 0;i < argc; ++i){
-                while(readArgAddr % 4 != 0) { //align address into 4
-                    readArgAddr += 1;
-                    writeArgAddr += 1;
-                }
-                DEBUG('c', "loop %d\n", i);
-                DEBUG('c', "string %d virtual address %d.\n", i, readArgAddr);
-                while(1){
-                    int currentPhyAddr = (currentThread->space)->TransPhyAddr(readArgAddr);
-                    if(phyAddr == -1) {
-                        DEBUG('c', " Read illegal virtual address.\n");
-                        machine->WriteRegister(2, 0); //return 0
-                        return;
-                    }
-                    c = (char) machine->mainMemory[currentPhyAddr];
-                    DEBUG('c', "reading char: %c\n", c);
-                    int newPhyAddr = (t->space)->TransPhyAddr(writeArgAddr);
-                    machine->mainMemory[newPhyAddr] = c;
-                    readArgAddr += 1;
-                    writeArgAddr += 1;
-                    if(c == '\0'){
-                        break;
-                    }    
-                }
-                //readArgAddr += 1;
-            }
-        }
-        machine -> WriteRegister(5 , t->space->getArgStart());
+        //DEBUG('c', "number of argument %d\n", argc);
+        t->space->Initialize(executable, 0);
+        // if(argc<=0){
+        //     t->space->Initialize(executable, 0);
+        // }else{
+        //     t->space->Initialize(executable, 3);
+        //     int readArgAddr = argv;
+        //     int writeArgAddr = t->space->getArgStart();
+        //     DEBUG('c', "readAddress %d\n", readArgAddr);
+        //     DEBUG('c', "writeAddress %d\n", writeArgAddr);
+        //     for(int i = 0;i < argc; ++i){
+        //         while(readArgAddr % 4 != 0) { //align address into 4
+        //             readArgAddr += 1;
+        //             writeArgAddr += 1;
+        //         }
+        //         DEBUG('c', "loop %d\n", i);
+        //         DEBUG('c', "string %d virtual address %d.\n", i, readArgAddr);
+        //         while(1){
+        //             int currentPhyAddr = (currentThread->space)->TransPhyAddr(readArgAddr);
+        //             if(phyAddr == -1) {
+        //                 DEBUG('c', " Read illegal virtual address.\n");
+        //                 machine->WriteRegister(2, 0); //return 0
+        //                 return;
+        //             }
+        //             c = (char) machine->mainMemory[currentPhyAddr];
+        //             DEBUG('c', "reading char: %c\n", c);
+        //             int newPhyAddr = (t->space)->TransPhyAddr(writeArgAddr);
+        //             machine->mainMemory[newPhyAddr] = c;
+        //             readArgAddr += 1;
+        //             writeArgAddr += 1;
+        //             if(c == '\0'){
+        //                 break;
+        //             }    
+        //         }
+        //         //readArgAddr += 1;
+        //     }
+        // }
+        // machine -> WriteRegister(5 , t->space->getArgStart());
         
         if(!(t->space->success)) { //initialize space failed
+            DEBUG('c', "Unable to initialize the address space successfully.\n");
             machine->WriteRegister(2, 0); //return 0
             return;
         }
@@ -260,7 +263,7 @@ ExceptionHandler(ExceptionType which)
         DEBUG('a', "Enter Join.\n");
         int pid = machine -> ReadRegister(4);
         if(processTable->Get(pid)==NULL){
-            DEBUG('a', "Invalid pid.\n");
+            DEBUG('c', "Invalid pid.\n");
             machine->WriteRegister(2,-65535);
             return;
 
