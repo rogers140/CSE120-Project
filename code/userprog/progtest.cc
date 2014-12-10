@@ -16,9 +16,11 @@
 #include "memorymanager.h"
 #include "table.h"
 #include "synchconsole.h"
+#include "backingstore.h"
 MemoryManager *TheMemoryManager;
 Table *processTable;
 SynchConsole *synchConsole;
+BackingStore *backingStore;
 
 //----------------------------------------------------------------------
 // StartProcess
@@ -42,6 +44,7 @@ StartProcess(char *filename)
 
     space = new AddrSpace();
     space->Initialize(executable, 0);
+
     currentThread->space = space;
 
     //delete executable;			// close file
@@ -49,6 +52,10 @@ StartProcess(char *filename)
     space->InitRegisters();		// set the initial register values
     space->RestoreState();		// load page table register
 
+    backingStore = new BackingStore(); //initialize backing store
+    if(!backingStore->addAddrSpace(space)) {
+        DEBUG('c', "Error! Adding address space failed.\n");
+    }
     machine->Run();			// jump to the user progam
     ASSERT(FALSE);			// machine->Run never returns;
     // the address space exits

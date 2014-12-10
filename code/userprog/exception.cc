@@ -27,6 +27,7 @@
 #include "addrspace.h"
 #include "syscall.h"
 #include "table.h"
+#include "backingstore.h"
 #include "synchconsole.h"
 
 //----------------------------------------------------------------------
@@ -53,6 +54,7 @@
 //----------------------------------------------------------------------
 extern Table *processTable;
 extern SynchConsole *synchConsole;
+extern BackingStore *backingStore;
 void exit(int exitCode);
 void ProcessStart(char *filename);
 
@@ -70,7 +72,7 @@ ExceptionHandler(ExceptionType which)
         exit(arg1);
     }
     else if ((which == SyscallException) && (type == SC_Exec)) {
-        DEBUG('a', "Enter Exec call.\n");
+        DEBUG('c', "Enter Exec call.\n");
         int arg1 = machine->ReadRegister(4);                           //read the arg of Exec
         int argc = machine->ReadRegister(5);
         int argv = machine->ReadRegister(6);
@@ -87,14 +89,14 @@ ExceptionHandler(ExceptionType which)
             phyAddr = (currentThread->space)->TransPhyAddr(arg1);
             if(phyAddr == -1) {
                 //error
-                DEBUG('a', "File name reaches illegal virtual address.\n");
+                DEBUG('c', "File name reaches illegal virtual address.\n");
                 delete [] filename;
                 machine->WriteRegister(2, 0); //return 0
                 return;
             }
             c = (char) machine->mainMemory[phyAddr];
             if(c>128||c<0){
-                DEBUG('a', "Bad string address, not ascii code.\n");
+                DEBUG('c', "Bad string address, not ascii code.\n");
                 delete [] filename;
                 machine->WriteRegister(2, 0); //return 0
                 return;
@@ -102,7 +104,7 @@ ExceptionHandler(ExceptionType which)
             if(index == maxLength - 1) {// exceed the max length
                 if(c != '\0') {
                     //error
-                    DEBUG('a', "Too long file name.\n");
+                    DEBUG('c', "Too long file name.\n");
                     delete [] filename;
                     machine->WriteRegister(2, 0); //return 0
                     return;
@@ -114,7 +116,7 @@ ExceptionHandler(ExceptionType which)
             }
             else if(c == '\0') {
                 filename[index] = '\0';
-                DEBUG('a', "string end.\n");
+                DEBUG('c', "string end.\n");
                 break;
             }
             else {
@@ -195,6 +197,12 @@ ExceptionHandler(ExceptionType which)
         //delete executable;                                                  // close file
         machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
         machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+
+        if(!backingStore->addAddrSpace(t->space)){ //put the new address into the backing file address list
+            DEBUG('c',"no place in backingstore address list\n");
+            machine->WriteRegister(2, 0); //return 0
+            return;
+        }
         t->Fork((VoidFunctionPtr)ProcessStart,willJoin);
         machine->WriteRegister(2, (int)(spaceID));
     }
@@ -278,17 +286,10 @@ ExceptionHandler(ExceptionType which)
         DEBUG('a',"PageFaultException.\n");
         Thread *t = currentThread;
         int faultAddr = machine->ReadRegister(39);
-        DEBUG('a', "fault page address: %d\n", faultAddr);
+        DEBUG('c', "fault page address: %d\n", faultAddr);
         int virtualPageNum = faultAddr / PageSize;
-        DEBUG('a', "virtual page number: %d\n", virtualPageNum);
-        t->space->PageIn(virtualPageNum);
-        // machine->WriteRegister(PCReg, machine->ReadRegister(PCReg) + 4);    //increment PC and NextPC
-        // machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
-        // Thread *t = currentThread;
-        // //if((processTable->Isempty())==0){
-        // delete t->space;                        // release the address space of current thread
-        // processTable->Release(t->getSpaceID());
-        // t->Finish();
+        DEBUG('c', "virtual page number: %d\n", virtualPageNum);
+        backingStore->PageIn(t->space, virtualPageNum);
 
     }
     else if(which == ReadOnlyException){
@@ -375,14 +376,10 @@ ExceptionHandler(ExceptionType which)
 void exit(int exitCode) {
     printf("I am going to exit %d\n",exitCode);
     Thread *t = currentThread;
-    //if((processTable->Isempty())==0){
-        delete t->space;                        // release the address space of current thread
-        processTable->Release(t->getSpaceID()); // release process table slot before leaving
-        t->Finish(); 
-    //}  
-    //else{
-        //interrupt->Halt(); //why 
-    //}
+    backingStore->removeAddrSpace(t->space); // kick this address space out of backing store address space list
+    delete t->space;                        // release the address space of current thread
+    processTable->Release(t->getSpaceID()); // release process table slot before leaving
+    t->Finish();
 }
 
 void

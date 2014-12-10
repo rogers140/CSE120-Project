@@ -31,12 +31,14 @@ public:
     void RestoreState();		// info on a context switch
     void Initialize(OpenFile *executable, int numOfExtraPages);   // initializing it with the program
                                              // stored in the file "executable" 
-    void PageIn(int virtualPageNum); 
+    void LoadFromExec(int virtualPageNum);  //load the content of the page from executable
     int TransPhyAddr(unsigned int virtAddr); //translate virtual address to physical address
     unsigned int TransPhyOffset(unsigned int virtAddr); //get physical offset
     unsigned int TransPhyNumpage(unsigned int virtAddr);//get physical number of page 
     bool success; //check if it successfully allocate pages to the thread
     unsigned int getArgStart();
+    unsigned int getNumOfPages();
+    TranslationEntry *getPageTable();
 private:
     TranslationEntry *pageTable;	// Assume linear page table translation
     // for now!

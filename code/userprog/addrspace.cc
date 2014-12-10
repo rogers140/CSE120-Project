@@ -77,7 +77,12 @@ AddrSpace::~AddrSpace()
     DEBUG('a',"Deleteing address space\n");
     unsigned int i = 0;
     for(i = 0; i < numPages; ++i) {
-        TheMemoryManager->FreePage(pageTable[i].physicalPage);
+        if(pageTable[i].physicalPage == -1) {
+            continue;
+        }
+        else {
+            TheMemoryManager->FreePage(pageTable[i].physicalPage);
+        }   
     }
     delete [] pageTable;
 }
@@ -99,45 +104,22 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
     FileCodeStart = noffH.code.inFileAddr;
     FileDataStart = noffH.initData.inFileAddr;
     execFile = executable; //save executable file
-// how big is address space?
+    // how big is address space?
     size = noffH.code.size + noffH.initData.size + noffH.uninitData.size
            + UserStackSize; // we need to increase the size
     // to leave room for the stack
     ASSERT(numOfExtraPages >= 0);
     numPages = divRoundUp(size, PageSize)+numOfExtraPages;
-    DEBUG('c',"Number of extra page: %d\n", numOfExtraPages);
+    //DEBUG('c',"Number of extra page: %d\n", numOfExtraPages);
     size = numPages * PageSize;
-
-    //do not assert!
-    //ASSERT(numPages <= NumPhysPages);       // check we're not trying
-    // to run anything too big --
-    // at least until we have
-    // virtual memory
-    // if(numPages > NumPhysPages) {
-    //     DEBUG('a', "Too big num of pages.\n");
-    //     success = false;
-    //     return;
-    // }
-    // else {
-    //     success = true;
-    // }
-    //ASSERT(numPages <= (TheMemoryManager->NumFreePage()));
-    // if(numPages > (TheMemoryManager->NumFreePage())) {
-    //     DEBUG('a', "No enough pages.\n");
-    //     success = false;
-    //     return;
-    // }
-    // else {
-    //     success = true;
-    // }
 
     DEBUG('a', "Initializing address space, num pages %d, size %d\n",
           numPages, size);
 // first, set up the translation
     pageTable = new TranslationEntry[numPages];
     for (i = 0; i < numPages; i++) {
-        pageTable[i].virtualPage = i;   // for now, virtual page # = phys page #
-        pageTable[i].physicalPage = 0;
+        pageTable[i].virtualPage = i;  
+        pageTable[i].physicalPage = -1; //not initialized
         pageTable[i].valid = FALSE;
         pageTable[i].use = FALSE;
         pageTable[i].dirty = FALSE;
@@ -151,143 +133,33 @@ AddrSpace::Initialize(OpenFile *executable, int numOfExtraPages)
         argStart = 0;
     }
 
-// zero out the entire address space page by page, to zero the unitialized data segment
-// and the stack segment
-// zeros out physical pages
-    // for(i=0; i < numPages; i++)
-    // {
-    //     int physPage = pageTable[i].physicalPage;
-    //     bzero(&machine->mainMemory[physPage*PageSize], PageSize);
-    // }
-
-// then, copy in the code and data segments into memory.
-
-   
-    // int currentCodeSize = noffH.code.size;
-    // int currentDataSize = noffH.initData.size;
-    // int currentCodePosition = noffH.code.inFileAddr;
-    // int currentDataPosition = noffH.initData.inFileAddr;
-    // int currentCodeVirtualAddr=noffH.code.virtualAddr;
-    // int currentDataVirtualAddr=noffH.initData.virtualAddr;
-    // DEBUG('a', "code VA starts: 0x%.2x, size is: %d\n",currentCodeVirtualAddr, currentCodeSize); 
-    // DEBUG('a', "data VA starts: 0x%.2x, size is: %d\n",currentDataVirtualAddr, currentDataSize);    
-
-    // if(noffH.code.size > 0)
-    // {
-
-    //     if(TransPhyOffset(currentCodeVirtualAddr)!=0&&
-    //        (currentCodeSize+TransPhyOffset(currentCodeVirtualAddr))<PageSize)
-    //     {
-    //         executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
-    //                            currentCodeSize, currentCodePosition);
-    //         currentCodeSize=0;
-    //     } 
-
-    //     if(TransPhyOffset(currentCodeVirtualAddr)!=0&&
-    //        (currentCodeSize+TransPhyOffset(currentCodeVirtualAddr))>=PageSize)
-    //     {
-    //         executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
-    //                            (PageSize-TransPhyOffset(currentCodeVirtualAddr)), currentCodePosition); 
-    //         currentCodeSize-=(PageSize-TransPhyOffset(currentCodeVirtualAddr));
-    //         currentCodePosition+=(PageSize-TransPhyOffset(currentCodeVirtualAddr));
-    //         currentCodeVirtualAddr+=(PageSize-TransPhyOffset(currentCodeVirtualAddr));
-    //     }
-
-    //     while (currentCodeSize >0) 
-    //     {
-    //         if(currentCodeSize < PageSize)
-    //         {
-
-    //             executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
-    //                                currentCodeSize, currentCodePosition); 
-    //             currentCodeSize-=PageSize;
-    //         }
-    //         else
-    //         {
-    //             executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentCodeVirtualAddr)]),
-    //                                 PageSize, currentCodePosition);
-        
-    //             currentCodeSize-=PageSize;
-    //             currentCodePosition+=PageSize;
-    //             currentCodeVirtualAddr+=PageSize;
-    //         }
-    //     }       
-
-    // }
-
-    // if(noffH.initData.size > 0)
-    // {
-  
-    //     if(TransPhyOffset(currentDataVirtualAddr)!=0&&currentDataSize<PageSize)
-    //     {
-
-    //         executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
-    //                             currentDataSize, currentDataPosition);
-    //         currentDataSize=0;
-    //     } 
-
-    //     if(TransPhyOffset(currentDataVirtualAddr)!=0&&currentDataSize>=PageSize)
-    //     {
-
-    //         executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
-    //                            (PageSize-TransPhyOffset(currentDataVirtualAddr)), currentDataPosition); 
-    //         currentDataSize-=(PageSize-TransPhyOffset(currentDataVirtualAddr));
-    //         currentDataPosition+=(PageSize-TransPhyOffset(currentDataVirtualAddr));
-    //         currentDataVirtualAddr+=(PageSize-TransPhyOffset(currentDataVirtualAddr));
-        
-    //     }
-
-    //     while (currentDataSize >0) 
-    //     {
-
-    //         if(currentDataSize < PageSize)
-    //         {
-
-    //             executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
-    //                                currentDataSize, currentDataPosition); 
-    //             currentDataSize-=PageSize;
-    //         }
-    //         else
-    //         {
-
-    //             executable->ReadAt(&(machine->mainMemory[TransPhyAddr(currentDataVirtualAddr)]),
-    //                                PageSize, currentDataPosition);
-        
-    //             currentDataSize-=PageSize;
-    //             currentDataPosition+=PageSize;
-    //             currentDataVirtualAddr+=PageSize;
-    //         }
-
-    //     }    
-
-    // }
-
+}
+TranslationEntry *
+AddrSpace::getPageTable() {
+    return pageTable;
 }
 void
-AddrSpace::PageIn(int virtualPageNum) {
-    pageTable[virtualPageNum].physicalPage = TheMemoryManager->AllocPage();
+AddrSpace::LoadFromExec(int virtualPageNum) {//initialize the page
+    //pageTable[virtualPageNum].physicalPage = phyPageNum; //may fail to throw eror!
     int currentVAddr = virtualPageNum * PageSize;
-    DEBUG('a', "Paging in page %d\n", virtualPageNum);
+    //DEBUG('c', "Paging in page %d\n", virtualPageNum);
     for(int i = currentVAddr; i < currentVAddr+PageSize; ++i){
         if(i >= CodeStart && i < CodeEnd){
-            DEBUG('a', "Paging in code from %d to %d.\n", i - CodeStart + FileCodeStart, TransPhyAddr(i));
+            //DEBUG('c', "Paging in code from %d to %d.\n", i - CodeStart + FileCodeStart, TransPhyAddr(i));
             execFile->ReadAt(&(machine->mainMemory[TransPhyAddr(i)]),
                                    1, i - CodeStart + FileCodeStart);
 
         }
         else if(i >= DataStart && i < DataEnd){
-            DEBUG('a', "Paging in data.\n");
+            //DEBUG('c', "Paging in data.\n");
             execFile->ReadAt(&(machine->mainMemory[TransPhyAddr(i)]),
                                    1, i - DataStart + FileDataStart);
         }
         else{
-            DEBUG('a', "Paging in stack.\n");
+            //DEBUG('c', "Paging in stack.\n");
             bzero(&machine->mainMemory[TransPhyAddr(i)], 1);
         }
     }
-
-
-
     pageTable[virtualPageNum].valid = true;
 }
 
@@ -349,12 +221,6 @@ void AddrSpace::RestoreState()
     machine->pageTable = pageTable;
     machine->pageTableSize = numPages;
 }
-//void AddrSpace::ReleasePages()
-//{
-//    for(int i = 0; i < numPages; i++)
-//    {
-//
-//    }
 
 int AddrSpace::TransPhyAddr(unsigned int virtAddr)
 {
@@ -396,4 +262,7 @@ unsigned int AddrSpace::TransPhyNumpage(unsigned int virtAddr)
 
 unsigned int AddrSpace::getArgStart(){
     return argStart;
+}
+unsigned int AddrSpace::getNumOfPages() {
+    return numPages;
 }
