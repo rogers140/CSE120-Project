@@ -5,6 +5,8 @@
 #include "addrspace.h"
 #include "filesys.h"
 #include "machine.h"
+#include "synch.h"
+
 #define maxPageNum 100
 #define maxAddressSpaceNum 50
 struct ShadowPageEntry {
@@ -16,7 +18,7 @@ class BackingStore{
 public:
 	BackingStore();
 	void PageOut(AddrSpace *obeyer, int virtualPageNum); //used for active yield of a page
-	void PageOut(); //used for passive yield 
+	void PageOut(AddrSpace *demander); //used for passive yield 
 	void PageIn(AddrSpace *demander, int virtualPageNum);
 	bool addAddrSpace(AddrSpace *space);
 	bool removeAddrSpace(AddrSpace *space);
@@ -26,6 +28,7 @@ private:
 	int usedPage; //number of pages that all process use
 	ShadowPageEntry lookUpTable[maxPageNum]; // look up the stored entry
 	AddrSpace *addrspaceList[maxAddressSpaceNum]; //store initialized addrspace
+	Lock* backingLock; //use lock to ensure thread-safe
 
 };
 

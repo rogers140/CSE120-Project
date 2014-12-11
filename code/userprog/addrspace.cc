@@ -66,12 +66,6 @@ AddrSpace::AddrSpace()
 {
 }
 
-
-//----------------------------------------------------------------------
-// AddrSpace::~AddrSpace
-// 	Dealloate an address space.  Nothing for now!
-//----------------------------------------------------------------------
-
 AddrSpace::~AddrSpace()
 {
     DEBUG('a',"Deleteing address space\n");
