@@ -140,22 +140,28 @@ AddrSpace::LoadFromExec(int virtualPageNum) {//initialize the page
     //pageTable[virtualPageNum].physicalPage = phyPageNum; //may fail to throw eror!
     int currentVAddr = virtualPageNum * PageSize;
     //DEBUG('c', "Paging in page %d\n", virtualPageNum);
+    bool paged = false;
     for(int i = currentVAddr; i < currentVAddr+PageSize; ++i){
         if(i >= CodeStart && i < CodeEnd){
             //DEBUG('c', "Paging in code from %d to %d.\n", i - CodeStart + FileCodeStart, TransPhyAddr(i));
             execFile->ReadAt(&(machine->mainMemory[TransPhyAddr(i)]),
                                    1, i - CodeStart + FileCodeStart);
+            paged = true;
 
         }
         else if(i >= DataStart && i < DataEnd){
             //DEBUG('c', "Paging in data.\n");
             execFile->ReadAt(&(machine->mainMemory[TransPhyAddr(i)]),
                                    1, i - DataStart + FileDataStart);
+            paged = true;
         }
         else{
             //DEBUG('c', "Paging in stack.\n");
             bzero(&machine->mainMemory[TransPhyAddr(i)], 1);
         }
+    }
+    if(!paged) {
+        stats->numPageIns -= 1;
     }
     //pageTable[virtualPageNum].valid = true;
 }
