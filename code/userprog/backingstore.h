@@ -17,10 +17,11 @@ struct ShadowPageEntry {
 class BackingStore{
 public:
 	BackingStore(int pagingAlgorithm);
-	void PageOut(AddrSpace *obeyer, int virtualPageNum); //used for active yield of a page
-	void PageOut(AddrSpace *demander);
+	void PageOut(AddrSpace *obeyer, int virtualPageNum); //basic page out action.
+	//void PageOut(AddrSpace *demander);
 	void RandomPageOut(AddrSpace *demander); //random paging out algorithm
 	void FIFOPageOut(AddrSpace *demander); //FIFO paging out algorithm
+	void LRUClockPageOut(AddrSpace *demander); //LRU paging out algorithm
 	void PageIn(AddrSpace *demander, int virtualPageNum);
 	bool addAddrSpace(AddrSpace *space);
 	bool removeAddrSpace(AddrSpace *space);
@@ -28,10 +29,10 @@ public:
 	~BackingStore();
 private:
 	OpenFile *backingStoreFile;
-	int usedPage; //number of pages that all process use
 	ShadowPageEntry lookUpTable[maxPageNum]; // look up the stored entry
 	AddrSpace *addrspaceList[maxAddressSpaceNum]; //store initialized addrspace
 	Lock* backingLock; //use lock to ensure thread-safe
+	int usedPage;
 	int indexOfVictim; // used for FIFO
 	int algorithm; //0: Random (default)
 				   //1: FIFO
