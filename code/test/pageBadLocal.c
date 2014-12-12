@@ -16,20 +16,37 @@ int array[192] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
          31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
          41, 42, 43, 44, 45, 46, 47};
 
+unsigned int seed;
+
+void
+irand_init()
+{
+  seed = 93186752;
+}
+
+unsigned int
+irand(int l, int h)
+{
+  unsigned int a = 1588635695, m = 429496U, q = 2, r = 1117695901;
+  unsigned int val;
+
+  seed = a*(seed % q) - r*(seed / q);
+  val = (seed / m) % (h - l) + l;
+ 
+  return val;
+}
 
 int
 add_array(int n)
 {
-    int i, sum, index;
-    int j = 1;
+    int i, sum, index, ranNum;
+    int j = 0;
     sum = 0;
     for (i = 0; i < n/2; i++) {
-        index = j*i;
-        if(index < 0){
-            index = index + 192;
-        }
+        index = j%192;
+        ranNum= irand(0,192);
         sum += array[index];
-        j = -1*j;
+        j = j + 32;
     }
     return sum;
 }
@@ -38,8 +55,6 @@ int
 main ()
 {
     int sum;
-
     sum = add_array(192);
-    
     Exit(sum);
 }

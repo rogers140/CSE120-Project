@@ -25,7 +25,7 @@ add_array(int n)
     sum = 0;
     for (i = 0; i < n; i++) {
     array[i] = i;
-	sum += array[i];
+    	sum += array[i];
     }
     return sum;
 }
@@ -34,8 +34,6 @@ int
 main ()
 {
     int sum;
-
     sum = add_array(192);
-    
     Exit(sum);
 }

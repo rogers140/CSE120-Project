@@ -44,8 +44,8 @@ add_array(int n)
     unsigned int ranNum;
     sum = 0;
     for (i = 0; i < n/2; i++) {
-    ranNum= irand(0,192);
-    sum += array[ranNum];
+        ranNum= irand(0,192);
+        sum += array[ranNum];
     }
     return sum;
 }
@@ -54,10 +54,8 @@ int
 main ()
 {
     int sum;
-    irand_init();
-    
+    irand_init();   
     sum = add_array(192);
-    
     Exit(sum);
 }
 

@@ -94,59 +94,8 @@ BackingStore::PageOut(AddrSpace *obeyer, int virtualPageNum){
 		(obeyer->getPageTable())[virtualPageNum].physicalPage = -1; //set its physical page number to -1
 	}
 }
-// void
-// BackingStore::PageOut(AddrSpace *demander) {//First Found First Out.
-// 	//backingLock->Acquire();
-// 	DEBUG('c', "Pagging out...\n");
-// 	bool found = false;
-// 	int addressCount = 0;
-// 	for(int i = 0; i < maxAddressSpaceNum; ++i) {
-// 		if(addrspaceList[i] != NULL) {
-// 			addressCount += 1;
-// 			if(addrspaceList[i] == demander) { // is detecting current thread
-// 				int numOfValidPage = 0;
-// 				for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
-// 					if((addrspaceList[i]->getPageTable())[j].valid) {
-// 						numOfValidPage += 1;
-// 					}
-// 				}
-// 				if(numOfValidPage <=1 ){
-// 					DEBUG('c', "numOfValidPage is less than 2.\n");
-// 					continue; //if we choose to page out the page from current address space who
-// 								//has only one valid page, just change to another one.
-// 				}
-// 				for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
-// 					if((addrspaceList[i]->getPageTable())[j].valid) {//if it's valid so it must hold a page
-// 						found = true;
-// 						DEBUG('c',"Find a page in space %d to evit: VA: %d, PA: %d.\n", i, j, addrspaceList[i]->getPageTable()[j].physicalPage);
-// 						PageOut(addrspaceList[i], j);
-// 						break;
-// 					}
-// 				}
-// 				if(found) break;
-// 			}
-// 			else {
-// 				//DEBUG('c', "The %d address space will evit a page.\n", i);
-// 				for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
-// 					if((addrspaceList[i]->getPageTable())[j].valid) {//if it's valid so it must hold a page
-// 						found = true;
-// 						DEBUG('c',"Find a page in space %d to evit: VA: %d, PA: %d.\n", i, j, addrspaceList[i]->getPageTable()[j].physicalPage);
-// 						PageOut(addrspaceList[i], j);
-// 						break;
-// 					}
-// 				}
-// 				if(found) break;
-// 			}
-// 		}
-// 	}
-// 	if(!found) {
-// 		DEBUG('c', "Error! Can not find a page to evit.\n");
-// 	}
-// 	//DEBUG('c', "Number of addressspace is: %d\n", addressCount);
-// 	//backingLock->Release();
-// }
 void
-BackingStore::RandomPageOut(AddrSpace *demander) {
+BackingStore::RandomPageOut(AddrSpace *demander) {//could be optimized, because it has some useless loops
 	DEBUG('c', "Randomly paging out...\n");
 	int victim = Random() % NumPhysPages;
 	for(int i = 0; i < maxAddressSpaceNum; ++i) {
@@ -181,8 +130,8 @@ BackingStore::FIFOPageOut(AddrSpace *demander) {
 void
 BackingStore::LRUClockPageOut(AddrSpace *demander) {
 	DEBUG('c', "LRUClock paging out...\n");
-	bool flag = true;
-	while(flag){
+	bool found = false;
+	while(!found){
 		for(int i = 0; i < maxAddressSpaceNum; ++i) {
 			if(addrspaceList[i] != NULL) {
 				for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
@@ -193,7 +142,7 @@ BackingStore::LRUClockPageOut(AddrSpace *demander) {
 						}else{
 							DEBUG('c',"Find a page in space %d to evit: VA: %d, PA: %d.\n", i, j, addrspaceList[i]->getPageTable()[j].physicalPage);
 							PageOut(addrspaceList[i], j);
-							flag = false;
+							found = true;
 							break;
 						}
 						
@@ -201,7 +150,7 @@ BackingStore::LRUClockPageOut(AddrSpace *demander) {
 				}
 			}
 		}
-		indexOfVictim = (indexOfVictim + 1) % NumPhysPages;	
+		indexOfVictim = (indexOfVictim + 1) % NumPhysPages;	//go to next page
 	}
 }
 

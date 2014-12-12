@@ -3,7 +3,9 @@ Team member:
 	Yiqiu Liu
 	Ruogu Liu
 	Nasha Zhai
-
+ ===========================================================
+|						Project 2							|
+ ===========================================================
 We have implemented part 1, 2, 4, 5, 6(extra credit). And nearly figure out how to deal with part 3. And we have made some tests on the following aspects:
 1. Exec:
 	We tested basic Exit("../test/exittest",0, 0, 0), and tested more than one Exec called in the same program (so there will be multithreading). And they all works well.
@@ -15,3 +17,32 @@ We have implemented part 1, 2, 4, 5, 6(extra credit). And nearly figure out how 
 	We implemented Join system call and tested it with "jointest.c". And it rans well.
 
 In this project, we four worked together. Lijun Chen implemented Exec, Yiqiu Liu implemented Join, Nasha Zhai implemented Exception, Ruogu Liu implemented Read & Write.
+
+
+ ===========================================================
+|						Project 3							|
+ ===========================================================
+ We have implemented part 1, 2, 3, 4, 5. We four worked together in this project: Nasha worked out part 1, Ruogu finished part 2, and Lijun finished part 3, Yiqiu finished part 4 and we together finished part 5, the extra credit.
+
+ First of all, we created a class called "BackingStore" in which we implemented our paging algorithm including RandomPageOut(), FIFOPageOut() and LRUClockPageOut(). Basically, we maintains a LookUp Table, an AddressSpace List and a victim index. Lookup table is acting as a map indicting page distribution on the backing store file. Its item contains a pointer to the address space, a virtual page number and a index of the address on the file. Every time we need to page in or page out, we refer to the Lookup Table to find the place to write in or read from the backing store file.
+
+ As for address space list, we use it to trace which address space is paging in or out. And the victim index decides which physical page we need to evict.
+
+ We have alter the main.cc to add some arguements in order to switch between paging algorithms. The command format is as following: 
+ 	"./nachos -x ../test/sort random"
+ 	"./nachos -x ../test/sort fifo"
+ 	"./nachos -x ../test/sort lru"
+
+ And the default algorithm is "random" algorithm if you do not add the argument to specify an algorithm. We have played those algorithms with only 2 physical pages and they all ran well.
+
+ We have tested our code with different test programs with various number of physical pages and three paging algorithms. 
+
+ To demostrate the page replacement policy, we use matmult.c with 32 physical pages and the page replacement policy can be chosen on
+
+
+
+
+
+
+
+ As for the bad situation for LRU paging algorithm, we created a program which would access the page that was recently paged out. So every time we made an access, we will have a page fault.

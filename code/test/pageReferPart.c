@@ -32,9 +32,7 @@ add_array(int n)
 int
 main ()
 {
-    int sum;
-    
+    int sum;    
     sum = add_array(192);  
-    
     Exit(sum);
 }

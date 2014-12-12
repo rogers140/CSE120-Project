@@ -33,7 +33,7 @@ private:
 	AddrSpace *addrspaceList[maxAddressSpaceNum]; //store initialized addrspace
 	Lock* backingLock; //use lock to ensure thread-safe
 	int usedPage;
-	int indexOfVictim; // used for FIFO
+	int indexOfVictim; // used for FIFO, LRU
 	int algorithm; //0: Random (default)
 				   //1: FIFO
 				   //2:	LRU
