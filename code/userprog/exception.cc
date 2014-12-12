@@ -260,6 +260,7 @@ ExceptionHandler(ExceptionType which)
     }
 
     else if(which == PageFaultException){
+        stats->numPageFaults += 1;
         DEBUG('a',"PageFaultException.\n");
         Thread *t = currentThread;
         int faultAddr = machine->ReadRegister(39);

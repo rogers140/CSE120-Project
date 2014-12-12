@@ -7,6 +7,7 @@ extern MemoryManager *TheMemoryManager;
 BackingStore::BackingStore(){
 	backingLock = new Lock("backingStore");
 	usedPage = 0;
+	indexOfVictim = 0;
 	char *fileName = "backingstore";
 	backingStoreFile = fileSystem->Open(fileName);
 	if(backingStoreFile == NULL) {
@@ -81,6 +82,7 @@ BackingStore::PageOut(AddrSpace *obeyer, int virtualPageNum){
 				backingStoreFile->WriteAt(&(machine->mainMemory[phyPageNum * PageSize]), PageSize, (lookUpTable[i].storePageNum)*PageSize);
 				(obeyer->getPageTable())[virtualPageNum].dirty = FALSE;
 			}
+			stats->numPageOuts += 1;
 			
 		}
 		else {
@@ -158,10 +160,28 @@ BackingStore::RandomPageOut(AddrSpace *demander) {
 		}
 	}
 }
+void
+BackingStore::FIFOPageOut(AddrSpace *demander) {
+	DEBUG('c', "FIFO paging out...\n");
+	for(int i = 0; i < maxAddressSpaceNum; ++i) {
+		if(addrspaceList[i] != NULL) {
+			for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
+				if(addrspaceList[i]->getPageTable()[j].physicalPage == indexOfVictim) {
+					DEBUG('c',"Find a page in space %d to evit: VA: %d, PA: %d.\n", i, j, addrspaceList[i]->getPageTable()[j].physicalPage);
+					PageOut(addrspaceList[i], j);
+					break;
+				}
+			}
+		}
+	}
+	indexOfVictim = (indexOfVictim + 1) % NumPhysPages;
+}
+
 
 void 
 BackingStore::PageIn(AddrSpace *demander, int virtualPageNum){
 	backingLock->Acquire();
+	stats->numPageIns += 1;
 	int k = 0;
 	for(k = 0; k < maxAddressSpaceNum; ++k) {
 		if(demander == addrspaceList[k]) {
@@ -174,7 +194,8 @@ BackingStore::PageIn(AddrSpace *demander, int virtualPageNum){
 		//no enough pages, we need to page out another page
 		//PageOut(demander);
 		while(phyPageNum == -1) { //in case the pageout failed
-			RandomPageOut(demander);
+			//RandomPageOut(demander);
+			FIFOPageOut(demander);
 			phyPageNum = TheMemoryManager->AllocPage();
 		}
 		// RandomPageOut(demander);

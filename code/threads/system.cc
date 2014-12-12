@@ -172,6 +172,7 @@ void
 Cleanup()
 {
     printf("\nCleaning up...\n");
+    printf("Paging: faults %d, page-ins %d, page-outs %d\n", stats->numPageFaults, stats->numPageIns, stats->numPageOuts);
 #ifdef NETWORK
     delete postOffice;
 #endif
