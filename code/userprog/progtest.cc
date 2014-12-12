@@ -29,7 +29,7 @@ BackingStore *backingStore;
 //----------------------------------------------------------------------
 
 void
-StartProcess(char *filename)
+StartProcess(char *filename, int algorithm)
 {
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
@@ -52,7 +52,7 @@ StartProcess(char *filename)
     space->InitRegisters();		// set the initial register values
     space->RestoreState();		// load page table register
 
-    backingStore = new BackingStore(); //initialize backing store
+    backingStore = new BackingStore(algorithm); //initialize backing store with Random
     if(!backingStore->addAddrSpace(space)) {
         DEBUG('c', "Error! Adding address space failed.\n");
     }

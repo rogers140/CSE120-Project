@@ -61,7 +61,7 @@ extern int testnum;
 
 extern void ThreadTest(void), Copy(char *unixFile, char *nachosFile);
 extern void Print(char *file), PerformanceTest(void);
-extern void StartProcess(char *file), ConsoleTest(char *in, char *out);
+extern void StartProcess(char *file, int algorithm), ConsoleTest(char *in, char *out);
 extern void MailTest(int networkID);
 
 //----------------------------------------------------------------------
@@ -111,7 +111,20 @@ main(int argc, char **argv)
 #ifdef USER_PROGRAM
         if (!strcmp(*argv, "-x")) {        	// run a user program
             ASSERT(argc > 1);
-            StartProcess(*(argv + 1));
+            int algorithm = 0;
+            if(argc > 2) {
+                //choose algorithm
+                if(!strcmp(*(argv + 2), "random")) {
+                    algorithm = 0;
+                }
+                else if(!strcmp(*(argv + 2), "fifo")) {
+                    algorithm = 1;
+                }
+                else if(!strcmp(*(argv + 2), "lru")) {
+                    algorithm = 2;
+                }
+            }
+            StartProcess(*(argv + 1), algorithm);
             argCount = 2;
         } else if (!strcmp(*argv, "-c")) {      // test the console
             if (argc == 1)

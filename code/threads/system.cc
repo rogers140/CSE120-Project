@@ -7,6 +7,7 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "backingstore.h"
 
 // This defines *all* of the global data structures used by Nachos.
 // These are all initialized and de-allocated by this file.
@@ -18,6 +19,7 @@ Interrupt *interrupt;			// interrupt status
 Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 // for invoking context switches
+extern BackingStore *backingStore;
 
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
@@ -172,6 +174,7 @@ void
 Cleanup()
 {
     printf("\nCleaning up...\n");
+    printf("Using algorithm: %s.\n", backingStore->getAlgorithm());
     printf("Paging: faults %d, page-ins %d, page-outs %d\n", stats->numPageFaults, stats->numPageIns, stats->numPageOuts);
 #ifdef NETWORK
     delete postOffice;

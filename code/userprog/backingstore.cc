@@ -4,10 +4,11 @@
 #include "machine.h"
 #include "memorymanager.h"
 extern MemoryManager *TheMemoryManager;
-BackingStore::BackingStore(){
+BackingStore::BackingStore(int pagingAlgorithm){
 	backingLock = new Lock("backingStore");
 	usedPage = 0;
 	indexOfVictim = 0;
+	algorithm = pagingAlgorithm;
 	char *fileName = "backingstore";
 	backingStoreFile = fileSystem->Open(fileName);
 	if(backingStoreFile == NULL) {
@@ -192,10 +193,17 @@ BackingStore::PageIn(AddrSpace *demander, int virtualPageNum){
 	int phyPageNum = TheMemoryManager->AllocPage();
 	if(phyPageNum == -1) {
 		//no enough pages, we need to page out another page
-		//PageOut(demander);
 		while(phyPageNum == -1) { //in case the pageout failed
-			//RandomPageOut(demander);
-			FIFOPageOut(demander);
+			if(algorithm == 1) {
+				FIFOPageOut(demander);
+			}
+			else if(algorithm == 2) {
+				//LRU
+			}
+			else {//default: Random
+				RandomPageOut(demander);
+			}
+			
 			phyPageNum = TheMemoryManager->AllocPage();
 		}
 		// RandomPageOut(demander);
@@ -275,5 +283,17 @@ BackingStore::removeAddrSpace(AddrSpace *space){
 		DEBUG('c', "removing space off backing store list [%d]\n", i);
 		backingLock->Release();
 		return true;
+	}
+}
+char* 
+BackingStore::getAlgorithm(){
+	if(algorithm == 0) {
+		return "Random Algorithm";
+	}
+	else if(algorithm == 1) {
+		return "FIFO Algorithm";
+	}
+	else {
+		return "LRU Algorithm";
 	}
 }

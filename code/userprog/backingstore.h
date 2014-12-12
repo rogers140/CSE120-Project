@@ -16,7 +16,7 @@ struct ShadowPageEntry {
 };
 class BackingStore{
 public:
-	BackingStore();
+	BackingStore(int pagingAlgorithm);
 	void PageOut(AddrSpace *obeyer, int virtualPageNum); //used for active yield of a page
 	void PageOut(AddrSpace *demander);
 	void RandomPageOut(AddrSpace *demander); //random paging out algorithm
@@ -24,6 +24,7 @@ public:
 	void PageIn(AddrSpace *demander, int virtualPageNum);
 	bool addAddrSpace(AddrSpace *space);
 	bool removeAddrSpace(AddrSpace *space);
+	char* getAlgorithm();
 	~BackingStore();
 private:
 	OpenFile *backingStoreFile;
@@ -32,6 +33,9 @@ private:
 	AddrSpace *addrspaceList[maxAddressSpaceNum]; //store initialized addrspace
 	Lock* backingLock; //use lock to ensure thread-safe
 	int indexOfVictim; // used for FIFO
+	int algorithm; //0: Random (default)
+				   //1: FIFO
+				   //2:	LRU
 
 };
 
