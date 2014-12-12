@@ -53,7 +53,7 @@ int
 main ()
 {
     int sum;
-
+    irand_init();  
     sum = add_array(192);
     
     Exit(sum);
