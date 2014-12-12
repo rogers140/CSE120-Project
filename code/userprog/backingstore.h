@@ -18,7 +18,8 @@ class BackingStore{
 public:
 	BackingStore();
 	void PageOut(AddrSpace *obeyer, int virtualPageNum); //used for active yield of a page
-	void PageOut(AddrSpace *demander); //used for passive yield 
+	void PageOut(AddrSpace *demander);
+	void RandomPageOut(AddrSpace *demander); //used for passive yield 
 	void PageIn(AddrSpace *demander, int virtualPageNum);
 	bool addAddrSpace(AddrSpace *space);
 	bool removeAddrSpace(AddrSpace *space);

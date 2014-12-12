@@ -32,9 +32,9 @@
 // the disk sector size, for
 // simplicity
 
-#define NumPhysPages    4
+#define NumPhysPages    2
 #define MemorySize 	(NumPhysPages * PageSize)
-#define TLBSize		4		// if there is a TLB, make it small
+#define TLBSize		3		// if there is a TLB, make it small
 
 enum ExceptionType { NoException,           // Everything ok!
                      SyscallException,      // A program executed a system call.

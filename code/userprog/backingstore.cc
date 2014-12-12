@@ -9,6 +9,24 @@ BackingStore::BackingStore(){
 	usedPage = 0;
 	char *fileName = "backingstore";
 	backingStoreFile = fileSystem->Open(fileName);
+	if(backingStoreFile == NULL) {
+		DEBUG('f', "No backing file! Creating...\n");
+		if(fileSystem->Create(fileName, maxPageNum*PageSize)) {
+			backingStoreFile = fileSystem->Open(fileName);
+			if(backingStoreFile ==  NULL) {
+				DEBUG('f', "Open file failed.\n");
+			}
+			else {
+				DEBUG('f', "Open file succeeded.\n");
+			}
+		}
+		else {
+			DEBUG('f', "Create file failed.\n");
+		}
+	}
+	else {
+		DEBUG('f', "Open file succeeded.\n");
+	}
 	for(int i = 0; i < maxPageNum; ++i) {
 		lookUpTable[i].space = NULL;
 		lookUpTable[i].virtualPageNum = -1;
@@ -16,14 +34,6 @@ BackingStore::BackingStore(){
 	}
 	for(int i = 0; i < maxAddressSpaceNum; ++i) {
 		addrspaceList[i] = NULL;
-	}
-	if(backingStoreFile == NULL) {
-		if(fileSystem->Create(fileName, maxPageNum*PageSize)) {
-			backingStoreFile = fileSystem->Open(fileName);
-		}
-		else {
-
-		}
 	}
 	
 }
@@ -39,15 +49,42 @@ BackingStore::PageOut(AddrSpace *obeyer, int virtualPageNum){
 	bool dirty = (obeyer->getPageTable())[virtualPageNum].dirty;
 	if(phyPageNum != -1) {
 		if(dirty) { //needs to be write to backingstore
+			DEBUG('c', "The page VPN: %d is dirty\n", virtualPageNum);
 			int i = 0;
-			for(i = 0; i < maxPageNum; ++i) {
-				if(lookUpTable[i].space == NULL) { 
+			for(i = 0; i < maxPageNum; ++i) { //find history
+				if(lookUpTable[i].space == obeyer && lookUpTable[i].virtualPageNum == virtualPageNum) { 
 					break;
 				}
 			}
-			ASSERT(i < 100); //not run out of file size
-			backingStoreFile->WriteAt(&(machine->mainMemory[phyPageNum]), PageSize, i*PageSize);
-			(obeyer->getPageTable())[virtualPageNum].dirty = FALSE;
+			if(i >= maxPageNum) {//not written into the file before
+				DEBUG('c', "First time writing into the backing file.\n");
+				int j = 0;
+				for(j = 0; j < maxPageNum; ++j) {
+					if(lookUpTable[j].space ==  NULL) {//finding a empty spot
+						break;
+					}
+				}
+				if(j >= maxPageNum) {
+					DEBUG('c', "Error! No enough file space!\n");
+				}
+				else {
+					lookUpTable[j].space = obeyer;
+					lookUpTable[j].virtualPageNum = virtualPageNum;
+					lookUpTable[j].storePageNum = j;
+					DEBUG('c', "VPN: %d is Writing into file at: %d\n",virtualPageNum, j);
+					backingStoreFile->WriteAt(&(machine->mainMemory[phyPageNum * PageSize]), PageSize, (lookUpTable[j].storePageNum)*PageSize);
+					(obeyer->getPageTable())[virtualPageNum].dirty = FALSE;
+				}
+			}
+			else {//have been written into the file before.
+				DEBUG('c', "Writing into file at: %d\n", lookUpTable[i].storePageNum);
+				backingStoreFile->WriteAt(&(machine->mainMemory[phyPageNum * PageSize]), PageSize, (lookUpTable[i].storePageNum)*PageSize);
+				(obeyer->getPageTable())[virtualPageNum].dirty = FALSE;
+			}
+			
+		}
+		else {
+			DEBUG('c', "The page VPN: %d is not dirty\n", virtualPageNum);
 		}
 		TheMemoryManager->FreePage(phyPageNum);
 		(obeyer->getPageTable())[virtualPageNum].valid = FALSE; //set the page to invalid
@@ -55,7 +92,7 @@ BackingStore::PageOut(AddrSpace *obeyer, int virtualPageNum){
 	}
 }
 void
-BackingStore::PageOut(AddrSpace *demander) {
+BackingStore::PageOut(AddrSpace *demander) {//decide which page to be paged out
 	//backingLock->Acquire();
 	DEBUG('c', "Pagging out...\n");
 	bool found = false;
@@ -75,18 +112,15 @@ BackingStore::PageOut(AddrSpace *demander) {
 					continue; //if we choose to page out the page from current address space who
 								//has only one valid page, just change to another one.
 				}
-				else {
-					for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
-						if((addrspaceList[i]->getPageTable())[j].valid) {//if it's valid so it must hold a page
-							found = true;
-							DEBUG('c',"Find a page in space %d to evit: VA: %d, PA: %d.\n", i, j, addrspaceList[i]->getPageTable()[j].physicalPage);
-							PageOut(addrspaceList[i], j);
-							break;
-						}
+				for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
+					if((addrspaceList[i]->getPageTable())[j].valid) {//if it's valid so it must hold a page
+						found = true;
+						DEBUG('c',"Find a page in space %d to evit: VA: %d, PA: %d.\n", i, j, addrspaceList[i]->getPageTable()[j].physicalPage);
+						PageOut(addrspaceList[i], j);
+						break;
 					}
-					if(found) break;
 				}
-				
+				if(found) break;
 			}
 			else {
 				//DEBUG('c', "The %d address space will evit a page.\n", i);
@@ -105,26 +139,47 @@ BackingStore::PageOut(AddrSpace *demander) {
 	if(!found) {
 		DEBUG('c', "Error! Can not find a page to evit.\n");
 	}
-	DEBUG('c', "Number of addressspace is: %d\n", addressCount);
+	//DEBUG('c', "Number of addressspace is: %d\n", addressCount);
 	//backingLock->Release();
 }
+void
+BackingStore::RandomPageOut(AddrSpace *demander) {
+	DEBUG('c', "Randomly paging out...\n");
+	int victim = Random() % NumPhysPages;
+	for(int i = 0; i < maxAddressSpaceNum; ++i) {
+		if(addrspaceList[i] != NULL) {
+			for(int j = 0; j < (int)addrspaceList[i]->getNumOfPages(); ++j) {
+				if(addrspaceList[i]->getPageTable()[j].physicalPage == victim) {
+					DEBUG('c',"Find a page in space %d to evit: VA: %d, PA: %d.\n", i, j, addrspaceList[i]->getPageTable()[j].physicalPage);
+					PageOut(addrspaceList[i], j);
+					break;
+				}
+			}
+		}
+	}
+}
+
 void 
 BackingStore::PageIn(AddrSpace *demander, int virtualPageNum){
 	backingLock->Acquire();
-	DEBUG('c', "Pagging in...\n");
 	int k = 0;
 	for(k = 0; k < maxAddressSpaceNum; ++k) {
 		if(demander == addrspaceList[k]) {
 			DEBUG('c', "Addrespace %d is demanding page.\n", k);
 		}
 	}
+	DEBUG('c', "Pagging in...\n");
 	int phyPageNum = TheMemoryManager->AllocPage();
 	if(phyPageNum == -1) {
 		//no enough pages, we need to page out another page
-		ASSERT(usedPage < maxPageNum);
-		PageOut(demander);
+		//PageOut(demander);
+		RandomPageOut(demander);
 		phyPageNum = TheMemoryManager->AllocPage();
-
+		if(phyPageNum == -1)
+			DEBUG('c', "page in failed\n");
+	}
+	else {
+		usedPage += 1;
 	}
 	DEBUG('c', "allocate Phy: %d to Virtual: %d\n", phyPageNum, virtualPageNum);
 	(demander->getPageTable())[virtualPageNum].physicalPage = phyPageNum;
@@ -134,15 +189,18 @@ BackingStore::PageIn(AddrSpace *demander, int virtualPageNum){
 			break;
 		}
 	}
-	if(i < maxPageNum) {
+	if(i < maxPageNum) { 
 		int filePageNum = lookUpTable[i].storePageNum;
 		//load data from backing store
-		backingStoreFile->ReadAt(&(machine->mainMemory[phyPageNum]),PageSize, filePageNum*PageSize);
+		DEBUG('c', "Loading data from backing store file from: %d.\n",filePageNum);
+		backingStoreFile->ReadAt(&(machine->mainMemory[phyPageNum * PageSize]), PageSize, filePageNum*PageSize);
 	}
 	else {
 		//load data from executable file
+		DEBUG('c', "Loading data from executable file.\n");
 		demander->LoadFromExec(virtualPageNum);
 	}
+	(demander->getPageTable())[virtualPageNum].valid = TRUE;
 	backingLock->Release();
 }
 bool 

@@ -157,7 +157,7 @@ AddrSpace::LoadFromExec(int virtualPageNum) {//initialize the page
             bzero(&machine->mainMemory[TransPhyAddr(i)], 1);
         }
     }
-    pageTable[virtualPageNum].valid = true;
+    //pageTable[virtualPageNum].valid = true;
 }
 
 //----------------------------------------------------------------------

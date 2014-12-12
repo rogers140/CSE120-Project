@@ -251,9 +251,9 @@ ExceptionHandler(ExceptionType which)
         DEBUG('a',"PageFaultException.\n");
         Thread *t = currentThread;
         int faultAddr = machine->ReadRegister(39);
-        DEBUG('c', "fault page address: %d\n", faultAddr);
+        //DEBUG('c', "fault page address: %d\n", faultAddr);
         int virtualPageNum = faultAddr / PageSize;
-        DEBUG('c', "virtual page number: %d\n", virtualPageNum);
+        DEBUG('c', "fault virtual page number: %d\n", virtualPageNum);
         backingStore->PageIn(t->space, virtualPageNum);
 
     }
