@@ -223,7 +223,7 @@ int AddrSpace::TransPhyAddr(unsigned int virtAddr)
 {
     unsigned int vpn, offset, physAddr;
     TranslationEntry *entry;
-    unsigned int pageFrame;
+    int pageFrame;
 
     vpn = (unsigned) virtAddr / PageSize;
     offset = (unsigned) virtAddr % PageSize;
@@ -234,6 +234,9 @@ int AddrSpace::TransPhyAddr(unsigned int virtAddr)
     }
     entry = &pageTable[vpn];
     pageFrame = entry->physicalPage;
+    if(pageFrame == -1) {
+        return -1;
+    }
     physAddr = pageFrame * PageSize + offset;
     return physAddr;
 }

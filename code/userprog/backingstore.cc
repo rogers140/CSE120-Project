@@ -173,10 +173,14 @@ BackingStore::PageIn(AddrSpace *demander, int virtualPageNum){
 	if(phyPageNum == -1) {
 		//no enough pages, we need to page out another page
 		//PageOut(demander);
-		RandomPageOut(demander);
-		phyPageNum = TheMemoryManager->AllocPage();
-		if(phyPageNum == -1)
-			DEBUG('c', "page in failed\n");
+		while(phyPageNum == -1) { //in case the pageout failed
+			RandomPageOut(demander);
+			phyPageNum = TheMemoryManager->AllocPage();
+		}
+		// RandomPageOut(demander);
+		// phyPageNum = TheMemoryManager->AllocPage();
+		// if(phyPageNum == -1)
+		// DEBUG('c', "page in failed\n");
 	}
 	else {
 		usedPage += 1;

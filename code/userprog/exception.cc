@@ -86,8 +86,11 @@ ExceptionHandler(ExceptionType which)
         char c = '\0';
         
         while(1) {
+            int value = 0;
+            machine->ReadMem(arg1, 1, &value);//force paging
+
             phyAddr = (currentThread->space)->TransPhyAddr(arg1);
-            //DEBUG('c', "phyaddr: %d\n", phyAddr);
+            DEBUG('c', "filename's phyaddr: %d\n", phyAddr);
             if(phyAddr == -1) {
                 //error
                 DEBUG('c', "File name reaches illegal virtual address.\n");
@@ -96,6 +99,7 @@ ExceptionHandler(ExceptionType which)
                 return;
             }
             c = (char) machine->mainMemory[phyAddr];
+
             if(c>128||c<0){
                 DEBUG('c', "Bad string address, not ascii code.\n");
                 delete [] filename;
@@ -179,6 +183,10 @@ ExceptionHandler(ExceptionType which)
         int i = 0;
         //SynchConsole *synchConsole = new SynchConsole("read console");
         for(i = 0; i < size; ++i) {
+
+            int value = 0;
+            machine->ReadMem(buffer, 1, &value);//force paging
+            
             int phyAddr = currentThread->space->TransPhyAddr(buffer);
             if(phyAddr == -1) {
                 //error
@@ -203,6 +211,10 @@ ExceptionHandler(ExceptionType which)
         int i = 0;
         //SynchConsole *synchConsole = new SynchConsole("read console");
         for(i = 0; i < size; ++i) {
+
+            int value = 0;
+            machine->ReadMem(buffer, 1, &value);//force paging
+
             DEBUG('c', "write to VA:%d\n", buffer);
             int phyAddr = currentThread->space->TransPhyAddr(buffer);
             if(phyAddr == -1) {
