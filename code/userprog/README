@@ -29,23 +29,221 @@ In this project, we four worked together. Lijun Chen implemented Exec, Yiqiu Liu
  As for address space list, we use it to trace which address space is paging in or out. And the victim index decides which physical page we need to evict.
 
  We have alter the main.cc to add some arguements in order to switch between paging algorithms. The command format is as following: 
+
  	"./nachos -x ../test/sort random"
  	"./nachos -x ../test/sort fifo"
  	"./nachos -x ../test/sort lru"
 
  And the default algorithm is "random" algorithm if you do not add the argument to specify an algorithm. We have played those algorithms with only 2 physical pages and they all ran well.
 
- We have tested our code with different test programs with various number of physical pages and three paging algorithms. 
+ To demostrate the page replacement policy, we have tested our code with different test programs with various number of physical pages and three paging algorithms. 
+ 
+ ====================
+|		Test 1 	     |
+ ====================
+Physical memory size: 2 pages.
 
- To demostrate the page replacement policy, we use matmult.c with 32 physical pages and the page replacement policy can be chosen on the command.
- To test between referencing all pages and referencing some of the pages, we use pageReferAll.c and pageReferPart.c with 8 physical pages and the page replacement policy can be chosen on the command.
- To test handling of dirty pages, we use pageReferClean.c and pageReferDirty.c with 8 physical pages and the page replacement policy can be chosen on the command.
- To test good, bad and random locality, we use pageGoodLocal.c, pageBadLocal.c and pageRandLocal.c with 8 physical pages and the page replacement policy can be chosen on the command.
+Page replacement policy: Random.
+
+Program		PageFaults	PageOuts	PageIns
+halt		5			1 			4
+array		1196		148			1195
+matmul		120781		18154		120728
+sort		13571128	2098553		13571087
+exectest	1214		1151		1210
+
+Page replacement policy: FIFO.
+
+Program		PageFaults	PageOuts	PageIns
+halt		4 			0			3
+array		883			149			882
+matmul		90171		18454		90133
+sort		10177095	2098178		10177062
+exectest	899			153			896
 
 
+Page replacement policy: LRU.
+
+Program		PageFaults	PageOuts	PageIns
+halt		4 			0			3
+array		883			149			882
+matmul		90171		18454		90133
+sort		10177095	2098178		10177062
+exectest	899			153			896
+
+ ====================
+|		Test 2 	     |
+ ====================
+Physical memory size: 4 pages.
+
+Page replacement policy: Random.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3 			0			2
+array		42			9 			41
+matmul		62644		14956		62604
+sort		4325035		1495185		4324997
+exectest	49 			9 			46
+
+Page replacement policy: FIFO.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3 			0 			2
+array		20 			3 			9
+matmul		62626		17620		62588
+sort		3127081		1555707		3127048
+exectest	27 			3 			24
+
+Page replacement policy: LRU.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		19 			3 			18
+matmul		50351 		17392		50313
+sort		2862645		1290151		2862612
+exectest	26 			3 			23
 
 
+ ====================
+|		Test 3 	     |
+ ====================
+Physical memory size: 8 pages.
 
+Page replacement policy: Random.
 
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		17157		3530		17119
+sort		41959		25999		41926
+exectest	14 			0 			11
 
- As for the bad situation for LRU paging algorithm, we created a program which would access the page that was recently paged out. So every time we made an access, we will have a page fault.
+Page replacement policy: FIFO.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		15696		3501		15658
+sort		35950		23973		35912
+exectest	14 			0 			11
+
+Page replacement policy: LRU.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		6110		225			6072
+sort		16049		16010		16016
+exectest	14 			0 			11
+
+ ====================
+|		Test 4       |
+ ====================
+Physical memory size: 16 pages.
+
+Page replacement policy: Random.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		4182		555			4144
+sort		15910		12791		15877
+exectest	14 			0 			11
+
+Page replacement policy: FIFO.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		8221		1001		8183
+sort		19993		16403		19900
+exectest	14 			0 			11
+
+Page replacement policy: LRU.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		5412		51			5374
+sort		14093		14073		14060
+exectest	14 			0 			11
+
+ ====================
+|		Test 5  	 |
+ ====================
+Physical memory size: 32 pages.
+
+Page replacement policy: Random.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		99			40			61
+sort		956			838			923
+exectest	14 			0 			11
+
+Page replacement policy: FIFO.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		107 		47			69
+sort		4832		4361		4799
+exectest	14 			0 			11
+
+Page replacement policy: LRU.
+
+Program		PageFaults	PageOuts	PageIns
+halt		3			0			2
+array		7 			0 			6
+matmul		84			40			46
+sort		4108		4072		4075
+exectest	14 			0 			11
+
+We can see from these 5 tests that LRU performs much better than FIFO and Random, except Test 5 which is the special case where LRU is worse than Random. The worst case for LRU is every time it needs to access a page, there is a page fault, which means LRU always page out the next page which will be used.
+
+To test between referencing all pages and referencing some of the pages, we use "pageReferAll.c" and "pageReferPart.c" with 8 physical pages and the page replacement policy can be chosen on the command.
+
+To test handling of dirty pages, we use "pageReferClean.c" and "pageReferDirty.c" with 8 physical pages and the page replacement policy can be chosen on the command.
+
+To test good, bad and random locality, we use "pageGoodLocal.c", "pageBadLocal.c" and "pageRandLocal.c" with 8 physical pages and the page replacement policy can be chosen on the command.
+ 
+ ====================
+|		Test 6  	 |
+ ====================
+Physical memory size: 8 pages.
+
+Page replacement policy: Random.
+
+Program				PageFaults	PageOuts	PageIns
+pageBadLocal		418 		76			417
+pageGoodLocal		48 			8 			47
+pageRandLocal		309 		60 			308
+pageReferAll		14 			0 			13
+pageReferPart		8 			0 			7
+pageReferClean		14 			0 			13
+pageReferDirty		12 			3 			11
+
+Page replacement policy: FIFO.
+
+Program				PageFaults	PageOuts	PageIns
+pageBadLocal		472 		100 		471
+pageGoodLocal		28 			4 			27
+pageRandLocal		346 		76 			345
+pageReferAll		16 			1 			15
+pageReferPart		8 			0 			7
+pageReferClean		16 			1 			15
+pageReferDirty		16 			5 			15
+
+Page replacement policy: LRU.
+
+Program				PageFaults	PageOuts	PageIns
+pageBadLocal		555			554			81
+pageGoodLocal		25 			4 			24
+pageRandLocal		344 		75 			343
+pageReferAll		13 			0 			12
+pageReferPart		8 			0 			7
+pageReferClean		13 			0 			12
+pageReferDirty		13 			4 			12
+
+As we can conclude from Test 6 that LRU did very good job in most cases, but will have trouble dealing with the situation of bad locality. Comparing referencing to all the pages with referencing some of the pages, we can see that the former one will cause more page faults and page ins. Comparing handling dirty with handling clean pages, we can see that dirty page test will cause more pageouts than clean one. When we have good locality, it has less page faults than the bad and random locality.
